@@ -30,7 +30,7 @@ func TestBroadcast(t *testing.T) {
 		t.Error(err.Error())
 	}
 	c := bot.JoinChan("#go-bot-test")
-	bot.Broadcast("Ayy broadcast")
+	bot.Broadcast("broadcast test")
 	c.Part()
 	bot.Quit()
 }
@@ -42,8 +42,7 @@ func TestMessage(t *testing.T) {
 	}
 
 	c := bot.JoinChan("#go-bot-test")
-	c.Say("Ayy message")
-	//go bot.Conn.Loop()
+	c.Say("Message test")
 	time.Sleep(7 * time.Second)
 	c.Part()
 	bot.Quit()
