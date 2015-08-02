@@ -2,7 +2,6 @@ package gochat
 
 import (
 	"errors"
-	"fmt"
 	"github.com/thoj/go-ircevent"
 )
 
@@ -11,7 +10,6 @@ type Bot struct {
 	Nick     string
 	Channels map[string]*Channel
 	Modules  []Module
-	Admins   []string
 	Conn     *irc.Connection
 }
 
@@ -28,33 +26,34 @@ func NewBot(server string, nick string) (*Bot, error) {
 		ready <- true
 	})
 	<-ready
-
-	//Load in default modules
-	defaultMods := make([]Module, 1)
-	defaultMods[0] = &PingMod{}
+	//	conn.VerboseCallbackHandler = true
+	//conn.Debug = true
 
 	bot := &Bot{
 		Server:   server,
 		Nick:     nick,
 		Channels: make(map[string]*Channel),
-		Modules:  defaultMods,
-		Admins:   make([]string, 0),
+		Modules:  make([]Module, 0),
 		Conn:     conn,
 	}
 
+	bot.AddModule(&PingMod{})
+
 	//Whenever a message is detected, send it to the respective channel for handling
 	conn.AddCallback("PRIVMSG", func(e *irc.Event) {
-		fmt.Println(e.Raw)
 		go bot.Channels[e.Arguments[0]].HandleMessage(&Message{Nick: e.Nick, Text: e.Message()})
 	})
 
 	return bot, nil
 }
 
+func (bot *Bot) AddModule(mod Module) {
+	bot.Modules = append(bot.Modules, mod)
+}
+
 //Joins a channel
 func (bot *Bot) JoinChan(chanName string) *Channel {
 	c := NewChannel(chanName, bot)
-	bot.Conn.Join(chanName)
 	bot.Channels[chanName] = c
 	return c
 }

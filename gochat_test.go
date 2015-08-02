@@ -6,7 +6,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	bot, err := NewBot("irc.animebytes.tv:6666", "go-bot")
+	bot, err := NewBot("irc.rizon.net:6666", "go-bot")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -14,7 +14,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestChanJoin(t *testing.T) {
-	bot, err := NewBot("irc.animebytes.tv:6666", "go-bot")
+	bot, err := NewBot("irc.rizon.net:6666", "go-bot")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -25,7 +25,7 @@ func TestChanJoin(t *testing.T) {
 }
 
 func TestBroadcast(t *testing.T) {
-	bot, err := NewBot("irc.animebytes.tv:6666", "go-bot")
+	bot, err := NewBot("irc.rizon.net:6666", "go-bot")
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -36,7 +36,7 @@ func TestBroadcast(t *testing.T) {
 }
 
 func TestMessage(t *testing.T) {
-	bot, err := NewBot("irc.animebytes.tv:6666", "go-bot")
+	bot, err := NewBot("irc.rizon.net:6666", "go-bot")
 	if err != nil {
 		t.Error(err.Error())
 	}
