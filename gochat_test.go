@@ -43,8 +43,8 @@ func TestMessage(t *testing.T) {
 
 	c := bot.JoinChan("#go-bot-test")
 	c.Say("Ayy message")
-	go bot.Conn.Loop()
-	time.Sleep(5 * time.Second)
+	//go bot.Conn.Loop()
+	time.Sleep(7 * time.Second)
 	c.Part()
 	bot.Quit()
 }

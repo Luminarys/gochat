@@ -26,8 +26,7 @@ func NewBot(server string, nick string) (*Bot, error) {
 		ready <- true
 	})
 	<-ready
-	//	conn.VerboseCallbackHandler = true
-	//conn.Debug = true
+	close(ready)
 
 	bot := &Bot{
 		Server:   server,
@@ -38,10 +37,22 @@ func NewBot(server string, nick string) (*Bot, error) {
 	}
 
 	bot.AddModule(&PingMod{})
+	um := &URLMod{}
+	um.Init()
+	bot.AddModule(um)
 
 	//Whenever a message is detected, send it to the respective channel for handling
 	conn.AddCallback("PRIVMSG", func(e *irc.Event) {
-		go bot.Channels[e.Arguments[0]].HandleMessage(&Message{Nick: e.Nick, Text: e.Message()})
+		if e.Nick != nick {
+			bot.Channels[e.Arguments[0]].HandleMessage(&Message{Nick: e.Nick, Text: e.Message()})
+		}
+	})
+
+	//Whenever a message is detected, send it to the respective channel for handling
+	conn.AddCallback("MODE", func(e *irc.Event) {
+		if e.Nick != nick {
+			bot.Channels[e.Arguments[0]].ModeChange(e)
+		}
 	})
 
 	return bot, nil

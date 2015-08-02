@@ -10,24 +10,26 @@ type Channel struct {
 	Name   string
 	Buffer []*Message
 	Bot    *Bot
-	Ops    []string
+	Ops    map[string]bool
 }
 
 type Message struct {
 	Nick string
 	Text string
-	isOp bool
 }
 
 //Creates and joins a new channel
 func NewChannel(channel string, bot *Bot) *Channel {
-	Ops := make([]string, 0)
+	Ops := make(map[string]bool, 0)
 	ready := make(chan bool)
 
 	bot.Conn.AddCallback("353", func(e *irc.Event) {
 		for _, nick := range strings.Split(e.Message(), " ") {
 			if i := strings.Index(nick, "@"); i == 0 {
-				Ops = append(Ops, nick[1:])
+				Ops[nick[1:]] = true
+			} else {
+				//Have to deal with other signs like %
+				Ops[nick] = false
 			}
 		}
 		ready <- true
@@ -36,6 +38,7 @@ func NewChannel(channel string, bot *Bot) *Channel {
 	bot.Conn.Join(channel)
 	bot.Conn.SendRaw("NAMES")
 	<-ready
+	close(ready)
 
 	return &Channel{
 		Name:   channel,
@@ -59,16 +62,26 @@ func (c *Channel) Part() {
 
 //Handles a message in a channel.
 func (c *Channel) HandleMessage(msg *Message) {
+	fmt.Println(msg.Text)
 	for _, mod := range c.Bot.Modules {
-		if mod.IsValid(msg) {
+		if mod.IsValid(msg, c) {
 			//Handle the action asynchronously
-			go func() {
+			go func(mod Module) {
 				res := mod.ParseMessage(msg, c)
 				if res != "" {
 					c.Say(res)
 				}
-			}()
+			}(mod)
 		}
 	}
 	c.Buffer = append(c.Buffer, msg)
+}
+
+func (c *Channel) ModeChange(e *irc.Event) {
+	fmt.Println(e.Arguments)
+	if e.Arguments[1] == "+o" {
+		c.Ops[e.Arguments[2]] = true
+	} else if e.Arguments[1] == "-o" {
+		c.Ops[e.Arguments[2]] = false
+	}
 }
