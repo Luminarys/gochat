@@ -2,44 +2,61 @@ package gochat
 
 import (
 	"errors"
+	"fmt"
 	"github.com/thoj/go-ircevent"
 )
 
 type Bot struct {
 	Server   string
 	Nick     string
-	Channels []*Channel
+	Channels map[string]*Channel
+	Modules  []Module
+	Admins   []string
 	Conn     *irc.Connection
 }
 
 //Creates a new bot for a server, and returns it once it is ready
 func NewBot(server string, nick string) (*Bot, error) {
-	bot := irc.IRC(nick, nick) //Create new ircobj
-	if err := bot.Connect(server); err != nil {
+	conn := irc.IRC(nick, nick) //Create new irc connection
+	if err := conn.Connect(server); err != nil {
 		return nil, errors.New("Error! Could not connect")
 	}
-	ready := make(chan bool)
 
+	ready := make(chan bool)
 	//ready once we get the welcome message(001)
-	bot.AddCallback("001", func(e *irc.Event) {
+	conn.AddCallback("001", func(e *irc.Event) {
 		ready <- true
 	})
 	<-ready
 
-	return &Bot{
+	//Load in default modules
+	defaultMods := make([]Module, 1)
+	defaultMods[0] = &PingMod{}
+
+	bot := &Bot{
 		Server:   server,
 		Nick:     nick,
-		Channels: make([]*Channel, 0),
-		Conn:     bot,
-	}, nil
+		Channels: make(map[string]*Channel),
+		Modules:  defaultMods,
+		Admins:   make([]string, 0),
+		Conn:     conn,
+	}
+
+	//Whenever a message is detected, send it to the respective channel for handling
+	conn.AddCallback("PRIVMSG", func(e *irc.Event) {
+		fmt.Println(e.Raw)
+		go bot.Channels[e.Arguments[0]].HandleMessage(&Message{Nick: e.Nick, Text: e.Message()})
+	})
+
+	return bot, nil
 }
 
 //Joins a channel
-func (bot *Bot) JoinChan(chanName string) error {
-	c := newChannel(chanName)
+func (bot *Bot) JoinChan(chanName string) *Channel {
+	c := NewChannel(chanName, bot)
 	bot.Conn.Join(chanName)
-	bot.Channels = append(bot.Channels, c)
-	return nil
+	bot.Channels[chanName] = c
+	return c
 }
 
 //Disconnects and destroys the bot
