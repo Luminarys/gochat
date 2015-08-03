@@ -137,6 +137,28 @@ func (m *QuoteMod) ParseMessage(msg *Message, c *Channel) string {
 	return "I couldn't find any quotes for that user!"
 }
 
+//Instructs the bot to join a channel - Requires operator status
+type ChanJoinMod struct {
+}
+
+func (m *ChanJoinMod) IsValid(msg *Message, c *Channel) bool {
+	parts := strings.Split(msg.Text, " ")
+	cmd := parts[0]
+	if cmd != ".join" {
+		return false
+	} else if val, ok := c.Ops[msg.Nick]; ok && val {
+		return true
+	}
+	return false
+}
+
+func (m *ChanJoinMod) ParseMessage(msg *Message, c *Channel) string {
+	parts := strings.Split(msg.Text, " ")
+	channel := parts[1]
+	c.Bot.JoinChan(channel)
+	return "Joined channel!"
+}
+
 //Returns a link to a random cute pic, courtesy of /c/
 type CuteMod struct {
 	Pics []string

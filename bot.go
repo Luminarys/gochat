@@ -64,6 +64,7 @@ func (bot *Bot) LoadDefaultModules() {
 	qm := &CuteMod{}
 	qm.Init()
 	bot.AddModule(qm)
+	bot.AddModule(&ChanJoinMod{})
 }
 
 //Loads a module into the bot
@@ -73,7 +74,7 @@ func (bot *Bot) AddModule(mod Module) {
 
 //Joins a channel
 func (bot *Bot) JoinChan(chanName string) *Channel {
-	c := NewChannel(chanName, bot)
+	c := bot.NewChannel(chanName)
 	bot.Channels[chanName] = c
 	return c
 }

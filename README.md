@@ -20,6 +20,15 @@ func main() {
 }
 ```
 
+#Default Modules
+These modules are built into the bot and can be loaded with bot.LoadDefaultModules(). The currently available modules are:
+* Ping-Pong: The bot says "Pong!" on a user saying ".ping"
+* URL Title Getting: The bot will display the title of a URL whenever a user types on into the chat
+* Sedding: The bot will revise your previous message when you say "s/[old phrase]/[new phrase]/"
+* Channel Joining: The bot will join a new channel on ".join [channel]". Note that this require operator status to run
+* Quoting: The bot will display a somewhat recent quote from a user on ".quote [nick]"
+* Cute Pics: The bot will provide a link to a random cute picture obtained from /c/ on ".cute"
+
 #Modules
 The core behind GoChat is the Module interface. Modules must implement a IsValid function which will check whether or not a message should be acted upon, and a ParseMessage function which will parse an input and return an output.
 

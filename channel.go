@@ -22,11 +22,11 @@ type Message struct {
 }
 
 //Creates and joins a new channel
-func NewChannel(channel string, bot *Bot) *Channel {
+func (bot *Bot) NewChannel(channel string) *Channel {
 	Ops := make(map[string]bool, 0)
 	ready := make(chan bool)
 
-	bot.Conn.AddCallback("353", func(e *irc.Event) {
+	i := bot.Conn.AddCallback("353", func(e *irc.Event) {
 		for _, nick := range strings.Split(e.Message(), " ") {
 			if i := strings.Index(nick, "@"); i == 0 {
 				Ops[nick[1:]] = true
@@ -42,6 +42,7 @@ func NewChannel(channel string, bot *Bot) *Channel {
 	bot.Conn.SendRaw("NAMES")
 	<-ready
 	close(ready)
+	bot.Conn.RemoveCallback("353", i)
 
 	c := &Channel{
 		Name:   channel,
