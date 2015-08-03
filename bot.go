@@ -62,6 +62,7 @@ func (bot *Bot) LoadDefaultModules() {
 	bot.AddModule(sm)
 	bot.AddModule(&QuoteMod{})
 	qm := &CuteMod{}
+	qm.Init()
 	bot.AddModule(qm)
 }
 

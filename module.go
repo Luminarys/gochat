@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Module interface {
@@ -138,6 +139,7 @@ func (m *QuoteMod) ParseMessage(msg *Message, c *Channel) string {
 
 //Returns a link to a random cute pic, courtesy of /c/
 type CuteMod struct {
+	Pics []string
 }
 
 type Catalog []Page
@@ -180,11 +182,11 @@ func (m *CuteMod) IsValid(msg *Message, c *Channel) bool {
 	return msg.Text == ".cute"
 }
 
-func (m *CuteMod) ParseMessage(msg *Message, c *Channel) string {
+func (m *CuteMod) Update() {
 	response, err := http.Get("https://a.4cdn.org/c/catalog.json")
 	urls := make([]string, 0)
 	if err != nil {
-		return "Error, could not get URL!"
+		return
 	} else {
 		defer response.Body.Close()
 		body, _ := ioutil.ReadAll(response.Body)
@@ -215,8 +217,21 @@ func (m *CuteMod) ParseMessage(msg *Message, c *Channel) string {
 			}
 		}
 	}
-	if len(urls) > 0 {
-		return "Here's a random cute pic: " + urls[rand.Intn(len(urls)-1)]
+	m.Pics = urls
+
+}
+
+func (m *CuteMod) Init() {
+	m.Update()
+	go func() {
+		time.Sleep(30 * time.Minute)
+		m.Update()
+	}()
+}
+
+func (m *CuteMod) ParseMessage(msg *Message, c *Channel) string {
+	if len(m.Pics) > 0 {
+		return "Here's a random cute pic: " + m.Pics[rand.Intn(len(m.Pics)-1)]
 	}
 	return "I couldn't find anything cute, you may want to try again later!"
 }
