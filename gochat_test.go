@@ -53,11 +53,27 @@ func TestModules(t *testing.T) {
 		t.Error(err.Error())
 	}
 
-	bot.LoadDefaultModules()
+	LoadDefaultModules(bot)
 
 	c := bot.JoinChan("#go-bot-test")
 	time.Sleep(10 * time.Second)
 	c.DumpLogs()
 	c.Part()
 	bot.Quit()
+}
+
+//Loads the default provided Modules
+func LoadDefaultModules(bot.Bot) {
+	bot.AddModule(&PingMod{})
+	um := &URLMod{}
+	um.Init()
+	bot.AddModule(um)
+	sm := &SedMod{}
+	sm.Init()
+	bot.AddModule(sm)
+	bot.AddModule(&QuoteMod{})
+	qm := &CuteMod{}
+	qm.Init()
+	bot.AddModule(qm)
+	bot.AddModule(&ChanJoinMod{})
 }

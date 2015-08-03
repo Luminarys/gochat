@@ -1,5 +1,5 @@
 # GoChat
-[![Build Status](https://travis-ci.org/Luminarys/GoChat.svg?branch=master)](https://travis-ci.org/Luminarys/GoChat) [![GoDoc](https://godoc.org/github.com/Luminarys/gochat?status.png)](https://godoc.org/github.com/Luminarys/gochat) 
+[![Build Status](https://travis-ci.org/Luminarys/gochat.svg?branch=master)](https://travis-ci.org/Luminarys/gochat) [![GoDoc](https://godoc.org/github.com/Luminarys/gochat?status.png)](https://godoc.org/github.com/Luminarys/gochat) 
 
 A simple modular IRC library written in Go, using go-ircevent.
 
@@ -10,7 +10,7 @@ Gochat currently uses the go-ircevent library, though this is likely to change s
 A simple bot that joins a test channel then leaves can be written as such:
 ```
 func main() {
-    bot, err := NewBot("irc.rizon.net:6666", "go-bot")
+    bot, err := gochat.NewBot("irc.rizon.net:6666", "go-bot")
     if err != nil {
         //Handle errors
     }
@@ -28,6 +28,19 @@ These modules are built into the bot and can be loaded with bot.LoadDefaultModul
 * Channel Joining: The bot will join a new channel on ".join [channel]". Note that this require operator status to run
 * Quoting: The bot will display a somewhat recent quote from a user on ".quote [nick]"
 * Cute Pics: The bot will provide a link to a random cute picture obtained from /c/ on ".cute"
+
+To load in the default modules you can write code as such:
+```
+import (
+    //Other imports
+    github.com/Luminarys/gochat/modules
+)
+
+func main() {
+    //Bot initialization above
+    gcModules.LoadDefaultModules(bot)
+}
+```
 
 #Modules
 The core behind GoChat is the Module interface. Modules must implement a IsValid function which will check whether or not a message should be acted upon, and a ParseMessage function which will parse an input and return an output.
