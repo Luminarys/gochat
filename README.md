@@ -19,7 +19,7 @@ func main() {
 ```
 
 #Modules
-The core behind GoChat is the Module interface. Modules must implement a IsValid method which will check whether or not a message should be acted upon, and a ParseMessage function which will parse an input and return an output.
+The core behind GoChat is the Module interface. Modules must implement a IsValid function which will check whether or not a message should be acted upon, and a ParseMessage function which will parse an input and return an output.
 
 
 A simple ping-pong module can be written as such:

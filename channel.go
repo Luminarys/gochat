@@ -63,6 +63,7 @@ func (c *Channel) Part() {
 //Handles a message in a channel.
 func (c *Channel) HandleMessage(msg *Message) {
 	fmt.Println(msg.Text)
+	c.Buffer = append(c.Buffer, msg)
 	for _, mod := range c.Bot.Modules {
 		if mod.IsValid(msg, c) {
 			//Handle the action asynchronously
@@ -74,7 +75,6 @@ func (c *Channel) HandleMessage(msg *Message) {
 			}(mod)
 		}
 	}
-	c.Buffer = append(c.Buffer, msg)
 }
 
 func (c *Channel) ModeChange(e *irc.Event) {

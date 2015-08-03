@@ -43,7 +43,21 @@ func TestMessage(t *testing.T) {
 
 	c := bot.JoinChan("#go-bot-test")
 	c.Say("Message test")
-	time.Sleep(7 * time.Second)
 	c.Part()
 	bot.Quit()
+}
+
+func TestModules(t *testing.T) {
+	bot, err := NewBot("irc.rizon.net:6666", "go-bot")
+	if err != nil {
+		t.Error(err.Error())
+	}
+
+	bot.LoadDefaultModules()
+
+	c := bot.JoinChan("#go-bot-test")
+	time.Sleep(10 * time.Second)
+	c.Part()
+	bot.Quit()
+
 }

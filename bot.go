@@ -36,11 +36,6 @@ func NewBot(server string, nick string) (*Bot, error) {
 		Conn:     conn,
 	}
 
-	bot.AddModule(&PingMod{})
-	um := &URLMod{}
-	um.Init()
-	bot.AddModule(um)
-
 	//Whenever a message is detected, send it to the respective channel for handling
 	conn.AddCallback("PRIVMSG", func(e *irc.Event) {
 		if e.Nick != nick {
@@ -58,6 +53,18 @@ func NewBot(server string, nick string) (*Bot, error) {
 	return bot, nil
 }
 
+//Loads the default provided Modules
+func (bot *Bot) LoadDefaultModules() {
+	bot.AddModule(&PingMod{})
+	um := &URLMod{}
+	um.Init()
+	bot.AddModule(um)
+	sm := &SedMod{}
+	sm.Init()
+	bot.AddModule(sm)
+}
+
+//Loads a module into the bot
 func (bot *Bot) AddModule(mod Module) {
 	bot.Modules = append(bot.Modules, mod)
 }
