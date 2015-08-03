@@ -2,6 +2,7 @@ package gochat
 
 import (
 	"golang.org/x/net/html"
+	"math/rand"
 	"net/http"
 	"regexp"
 	"strings"
@@ -105,4 +106,29 @@ func (s *SedMod) ParseMessage(msg *Message, c *Channel) string {
 		}
 	}
 	return "Luminarys: I couldn't find any recent messages to perform a subsitution for!"
+}
+
+//Returns a random quote from a user
+type QuoteMod struct {
+}
+
+func (m *QuoteMod) IsValid(msg *Message, c *Channel) bool {
+	parts := strings.Split(msg.Text, " ")
+	return parts[0] == ".quote" && len(parts) > 1
+}
+
+func (m *QuoteMod) ParseMessage(msg *Message, c *Channel) string {
+	parts := strings.Split(msg.Text, " ")
+	nick := parts[1]
+	messages := make([]string, 0)
+	for i := len(c.Buffer) - 1; i >= 0; i-- {
+		pmsg := c.Buffer[i]
+		if pmsg.Nick == nick {
+			messages = append(messages, pmsg.Text)
+		}
+	}
+	if len(messages) > 0 {
+		return nick + ": " + messages[rand.Intn(len(messages)-1)]
+	}
+	return "I couldn't find any quotes for that user!"
 }

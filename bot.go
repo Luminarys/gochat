@@ -60,6 +60,7 @@ func (bot *Bot) LoadDefaultModules() {
 	sm := &SedMod{}
 	sm.Init()
 	bot.AddModule(sm)
+	bot.AddModule(&QuoteMod{})
 }
 
 //Loads a module into the bot
