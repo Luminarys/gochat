@@ -1,10 +1,13 @@
 package gochat
 
 import (
+	"encoding/json"
 	"golang.org/x/net/html"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -131,4 +134,89 @@ func (m *QuoteMod) ParseMessage(msg *Message, c *Channel) string {
 		return nick + ": " + messages[rand.Intn(len(messages)-1)]
 	}
 	return "I couldn't find any quotes for that user!"
+}
+
+//Returns a link to a random cute pic, courtesy of /c/
+type CuteMod struct {
+}
+
+type Catalog []Page
+
+type Page struct {
+	Number  int             `json:"page"`
+	Threads []*FourchanPost `json:"threads"`
+}
+
+type Thread struct {
+	Posts []*FourchanPost `json:"posts"`
+}
+
+type FourchanPost struct {
+	Number        int    `json:"no"`
+	ReplyTo       int    `json:"resto"`
+	Sticky        int    `json:"sticky,omitempty"`
+	Closed        int    `json:"closed,omitempty"`
+	Date          string `json:"now"`
+	Timestamp     int    `json:"time"`
+	Name          string `json:"name,omitempty"` //username
+	Tripcode      string `json:"trip,omitempty"`
+	ID            string `json:"id,omitempty"` //user ID
+	Capcode       string `json:"capcode,omitempty"`
+	CountryName   string `json:"country_name,omitempty"`
+	Email         string `json:"email,omitempty"`
+	Subject       string `json:"sub,omitempty"`
+	Text          string `json:"com,omitempty"` //HTML
+	FileTime      uint64 `json:"tim,omitempty"`
+	FileExt       string `json:"ext,omitempty"`
+	FileDeleted   int    `json:"filedeleted,omitempty"`
+	Spoiler       int    `json:"spoiler,omitempty"`
+	OmitedPosts   int    `json:"omitted_posts,omitempty"`
+	OmittedImages int    `json:"omitted_images,omitempty"`
+	Replies       int    `json:"replies,omitempty"`
+	Images        int    `json:"images,omitempty"`
+}
+
+func (m *CuteMod) IsValid(msg *Message, c *Channel) bool {
+	return msg.Text == ".cute"
+}
+
+func (m *CuteMod) ParseMessage(msg *Message, c *Channel) string {
+	response, err := http.Get("https://a.4cdn.org/c/catalog.json")
+	urls := make([]string, 0)
+	if err != nil {
+		return "Error, could not get URL!"
+	} else {
+		defer response.Body.Close()
+		body, _ := ioutil.ReadAll(response.Body)
+		var data Catalog
+		json.Unmarshal(body, &data)
+		for _, page := range data {
+			for _, thread := range page.Threads {
+				r, err := http.Get("https://a.4cdn.org/c/thread/" + strconv.Itoa(thread.Number) + ".json")
+				if err == nil {
+					b, err := ioutil.ReadAll(r.Body)
+					if err != nil {
+						continue
+					}
+					var t Thread
+					err = json.Unmarshal(b, &t)
+					if err != nil {
+						continue
+					}
+					for _, post := range t.Posts {
+						if post.FileTime != 0 {
+							urls = append(urls, "https://i.4cdn.org/c/"+strconv.FormatUint(post.FileTime, 10)+post.FileExt)
+						}
+					}
+					r.Body.Close()
+				} else {
+					continue
+				}
+			}
+		}
+	}
+	if len(urls) > 0 {
+		return "Here's a random cute pic: " + urls[rand.Intn(len(urls)-1)]
+	}
+	return "I couldn't find anything cute, you may want to try again later!"
 }

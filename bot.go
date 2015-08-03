@@ -61,6 +61,8 @@ func (bot *Bot) LoadDefaultModules() {
 	sm.Init()
 	bot.AddModule(sm)
 	bot.AddModule(&QuoteMod{})
+	qm := &CuteMod{}
+	bot.AddModule(qm)
 }
 
 //Loads a module into the bot
