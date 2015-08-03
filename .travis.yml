@@ -1,0 +1,7 @@
+lannguage: go
+
+go:
+    - tip
+
+script:
+    - make test 

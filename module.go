@@ -73,7 +73,7 @@ func (u *URLMod) ParseMessage(msg *Message, c *Channel) string {
 		f(doc, false)
 		return re
 	}
-	return ""
+	//return ""
 }
 
 //Allows user to perform a s/[original]/[new]/ on previous text

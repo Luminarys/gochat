@@ -1,5 +1,6 @@
 # GoChat
-A modular IRC library built in Go
+[![Build Status](https://travis-ci.org/Luminarys/gochat.png?branch=master)](https://travis-ci.org/Luminarys/gochat) [![GoDoc](https://godoc.org/github.com/Luminarys/gochat?status.png)](https://godoc.org/github.com/Luminarys/gochat) 
+A modular IRC library built in Go, using go-ircevent.
 
 # Requirements
 Gochat currently uses the go-ircevent library, though this is likely to change soon. You can install it by running `go get github.com/thoj/go-ircevent`.
