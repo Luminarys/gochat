@@ -142,18 +142,18 @@ type CuteMod struct {
 	Pics []string
 }
 
-type Catalog []Page
+type catalog []page
 
-type Page struct {
+type page struct {
 	Number  int             `json:"page"`
-	Threads []*FourchanPost `json:"threads"`
+	Threads []*fourchanPost `json:"threads"`
 }
 
-type Thread struct {
-	Posts []*FourchanPost `json:"posts"`
+type bread struct {
+	Posts []*fourchanPost `json:"posts"`
 }
 
-type FourchanPost struct {
+type fourchanPost struct {
 	Number        int    `json:"no"`
 	ReplyTo       int    `json:"resto"`
 	Sticky        int    `json:"sticky,omitempty"`
@@ -190,7 +190,7 @@ func (m *CuteMod) Update() {
 	} else {
 		defer response.Body.Close()
 		body, _ := ioutil.ReadAll(response.Body)
-		var data Catalog
+		var data catalog
 		json.Unmarshal(body, &data)
 		for _, page := range data {
 			for _, thread := range page.Threads {
@@ -200,7 +200,7 @@ func (m *CuteMod) Update() {
 					if err != nil {
 						continue
 					}
-					var t Thread
+					var t bread
 					err = json.Unmarshal(b, &t)
 					if err != nil {
 						continue
