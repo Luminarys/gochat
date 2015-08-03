@@ -1,5 +1,6 @@
 # GoChat
 [![Build Status](https://travis-ci.org/Luminarys/GoChat.svg?branch=master)](https://travis-ci.org/Luminarys/GoChat) [![GoDoc](https://godoc.org/github.com/Luminarys/gochat?status.png)](https://godoc.org/github.com/Luminarys/gochat) 
+
 A simple modular IRC library written in Go, using go-ircevent.
 
 # Requirements
@@ -21,7 +22,6 @@ func main() {
 
 #Modules
 The core behind GoChat is the Module interface. Modules must implement a IsValid function which will check whether or not a message should be acted upon, and a ParseMessage function which will parse an input and return an output.
-
 
 A simple ping-pong module can be written as such:
 ```
@@ -47,6 +47,9 @@ func main() {
 Now, whenever a user types ".ping" into a channel, the bot will respond with "Pong!".
 
 #TODO
+* Add in more useful modules
+* Allow for global vs. channel modules
+* Add in a more comprehensive permissions system
+* Use configuration files or flags
 * Move away from the go-ircevent library and become a standalone library
-* Database support for logs
-* Demo client
+
