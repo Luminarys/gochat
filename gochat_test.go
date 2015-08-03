@@ -57,7 +57,7 @@ func TestModules(t *testing.T) {
 
 	c := bot.JoinChan("#go-bot-test")
 	time.Sleep(10 * time.Second)
+	c.DumpLogs()
 	c.Part()
 	bot.Quit()
-
 }

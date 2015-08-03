@@ -38,9 +38,7 @@ func NewBot(server string, nick string) (*Bot, error) {
 
 	//Whenever a message is detected, send it to the respective channel for handling
 	conn.AddCallback("PRIVMSG", func(e *irc.Event) {
-		if e.Nick != nick {
-			bot.Channels[e.Arguments[0]].HandleMessage(&Message{Nick: e.Nick, Text: e.Message()})
-		}
+		bot.Channels[e.Arguments[0]].HandleMessage(&Message{Nick: e.Nick, Text: e.Message()})
 	})
 
 	//Whenever a message is detected, send it to the respective channel for handling
