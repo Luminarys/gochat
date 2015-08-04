@@ -1,0 +1,202 @@
+package gochat
+
+import (
+	"bufio"
+	"crypto/tls"
+	"fmt"
+	"net"
+	"strings"
+	"time"
+)
+
+//Represents a connection to an IRC server
+type connection struct {
+	Server    string
+	ReadChan  chan *Message
+	WriteChan chan string
+	Conn      net.Conn
+	UseTLS    bool
+	Nick      string
+
+	//Low level critical modules
+	Modules []Module
+
+	// Unix domain socket address for reconnects (linux only)
+	unixastr string
+	unixlist net.Listener
+
+	// Whether or not this is a reconnect instance
+	reconnect bool
+
+	// Duration to wait between sending of messages to avoid being
+	// kicked by the server for flooding (default 200ms)
+	ThrottleDelay time.Duration
+}
+
+//Makes and returns a new connection to a server
+func makeConn(server, nick string, UseTLS, recon bool) (*connection, error) {
+	conn := new(connection)
+
+	conn.ReadChan = make(chan *Message, 20)
+	conn.WriteChan = make(chan string, 20)
+	conn.Nick = nick
+	conn.unixastr = fmt.Sprintf("@%s/irc", nick)
+	conn.UseTLS = UseTLS
+	conn.ThrottleDelay = time.Millisecond * 200
+
+	// Attempt reconnection
+	var hijack bool
+	if recon {
+		hijack = conn.hijackSession()
+		LTrace.Println("Hijack: ", hijack)
+	}
+
+	if !hijack {
+		err := conn.connect(server)
+		if err != nil {
+			LWarning.Println("Could not connect!")
+			return nil, err
+		}
+		LTrace.Println("Connected successfuly!")
+	}
+
+	go conn.readMessages()
+	go conn.writeMessages()
+	go conn.startUnixListener()
+
+	return conn, nil
+}
+
+func (c *connection) user(user string) {
+	c.send(fmt.Sprintf("USER %s %s * :%s", user, 8, user))
+}
+
+func (c *connection) nick(nick string) {
+	c.send("NICK " + nick)
+}
+
+func (c *connection) addModule(m Module) {
+	c.Modules = append(c.Modules, m)
+}
+
+//Establishes connection to a server
+func (c *connection) connect(server string) error {
+	var err error
+	LTrace.Println("Connecting to server")
+	if c.UseTLS {
+		c.Conn, err = tls.Dial("tcp", server, &tls.Config{})
+		if err != nil {
+			LWarning.Println("Could not connect to server with TLS")
+			return err
+		}
+	} else {
+		c.Conn, err = net.Dial("tcp", server)
+		if err != nil {
+			LWarning.Println("Could not connect to server")
+			return err
+		}
+	}
+	c.Server = server
+	return nil
+}
+
+//Quits and destroys connection
+func (c *connection) quit() {
+	c.WriteChan <- "QUIT"
+	time.Sleep(time.Millisecond * 50)
+	c.unixlist.Close()
+	c.Conn.Close()
+	c = nil
+}
+
+//Sends a private message to a user or channel
+func (c *connection) privmsg(who, text string) {
+	for len(text) > 400 {
+		c.send("PRIVMSG " + who + " :" + text[:400])
+		text = text[400:]
+	}
+	c.send("PRIVMSG " + who + " :" + text)
+}
+
+func (c *connection) send(msg string) {
+	c.WriteChan <- msg
+}
+
+//Loop to read messages
+func (c *connection) readMessages() {
+	scan := bufio.NewScanner(c.Conn)
+	for scan.Scan() {
+		msg, err := ParseMessage(scan.Text())
+		parsePM(msg)
+		if err != nil {
+			continue
+		}
+		used := false
+		//Attempt to utilize low level modules, if not then pass it into the chan
+		for _, mod := range c.Modules {
+			if mod.IsValid(msg, nil) {
+				res := mod.ParseMessage(msg, nil)
+				if res != "" {
+					c.WriteChan <- res
+				}
+				used = true
+				break
+			}
+		}
+		if !used {
+			c.ReadChan <- msg
+		}
+	}
+	close(c.ReadChan)
+}
+
+//Loop to write messages
+func (c *connection) writeMessages() {
+	for s := range c.WriteChan {
+		LTrace.Println("Sending Message: " + s)
+		_, err := fmt.Fprint(c.Conn, s+"\r\n")
+		if err != nil {
+			LWarning.Println("Write error, could not send Message("+s+"): ", err.Error())
+			return
+		}
+		//time.Sleep(c.ThrottleDelay)
+	}
+}
+func parsePM(m *Message) {
+	msg := m.Text
+	if m.Cmd == "PRIVMSG" && len(msg) > 2 && msg[0] == '\x01' {
+		m.Cmd = "CTCP" //Unknown CTCP
+
+		if i := strings.LastIndex(msg, "\x01"); i > 0 {
+			msg = msg[1:i]
+		} else {
+			LWarning.Println("Invalid CTCP Message")
+			return
+		}
+
+		if msg == "VERSION" {
+			m.Cmd = "CTCP_VERSION"
+
+		} else if msg == "TIME" {
+			m.Cmd = "CTCP_TIME"
+
+		} else if strings.HasPrefix(msg, "PING") {
+			m.Cmd = "CTCP_PING"
+
+		} else if msg == "USERINFO" {
+			m.Cmd = "CTCP_USERINFO"
+
+		} else if msg == "CLIENTINFO" {
+			m.Cmd = "CTCP_CLIENTINFO"
+
+		} else if strings.HasPrefix(msg, "ACTION") {
+			m.Cmd = "CTCP_ACTION"
+			if len(msg) > 6 {
+				msg = msg[7:]
+			} else {
+				msg = ""
+			}
+		}
+		m.Arguments[len(m.Arguments)-1] = msg
+	}
+}

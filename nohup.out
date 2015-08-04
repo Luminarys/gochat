@@ -1,0 +1,190 @@
+=== RUN TestNew-8
+TRACE: 2015/08/04 03:32:50 connection.go:85: Connecting to server
+TRACE: 2015/08/04 03:32:50 connection.go:60: Connected successfuly!
+TRACE: 2015/08/04 03:32:50 connection.go:156: Sending Message: USER go-bot %!s(int=8) * :go-bot
+TRACE: 2015/08/04 03:32:50 connection.go:156: Sending Message: NICK go-bot
+TRACE: 2015/08/04 03:32:50 bot.go:57: 439:  Please wait while we process your connection.
+TRACE: 2015/08/04 03:32:50 bot.go:57: NOTICE:  *** Found your hostname (cached)
+TRACE: 2015/08/04 03:32:50 bot.go:57: NOTICE:  *** Checking Ident
+TRACE: 2015/08/04 03:32:51 connection.go:156: Sending Message: QUIT
+WARNING: 2015/08/04 03:32:51 reconn.go:24: unix listener error:  accept unix @go-bot/irc: use of closed network connection
+--- PASS: TestNew-8 (2.27s)
+=== RUN TestChanJoin-8
+TRACE: 2015/08/04 03:32:52 connection.go:85: Connecting to server
+TRACE: 2015/08/04 03:32:52 connection.go:60: Connected successfuly!
+TRACE: 2015/08/04 03:32:52 connection.go:156: Sending Message: USER go-bot %!s(int=8) * :go-bot
+TRACE: 2015/08/04 03:32:52 connection.go:156: Sending Message: NICK go-bot
+TRACE: 2015/08/04 03:32:52 bot.go:57: 439:  Please wait while we process your connection.
+TRACE: 2015/08/04 03:32:52 bot.go:57: NOTICE:  *** Found your hostname (cached)
+TRACE: 2015/08/04 03:32:52 bot.go:57: NOTICE:  *** Checking Ident
+TRACE: 2015/08/04 03:32:52 connection.go:156: Sending Message: JOIN #go-bot-test
+TRACE: 2015/08/04 03:32:52 connection.go:156: Sending Message: NAMES #go-bot-test
+TRACE: 2015/08/04 03:32:53 connection.go:156: Sending Message: PART #go-bot-test
+TRACE: 2015/08/04 03:32:53 connection.go:156: Sending Message: QUIT
+WARNING: 2015/08/04 03:32:53 reconn.go:24: unix listener error:  accept unix @go-bot/irc: use of closed network connection
+--- PASS: TestChanJoin-8 (2.30s)
+=== RUN TestBroadcast-8
+TRACE: 2015/08/04 03:32:54 connection.go:85: Connecting to server
+TRACE: 2015/08/04 03:32:55 connection.go:60: Connected successfuly!
+TRACE: 2015/08/04 03:32:55 connection.go:156: Sending Message: USER go-bot %!s(int=8) * :go-bot
+TRACE: 2015/08/04 03:32:55 connection.go:156: Sending Message: NICK go-bot
+TRACE: 2015/08/04 03:32:55 bot.go:57: 439:  Please wait while we process your connection.
+TRACE: 2015/08/04 03:32:55 connection.go:156: Sending Message: JOIN #go-bot-test
+TRACE: 2015/08/04 03:32:55 bot.go:57: NOTICE:  *** Found your hostname (cached)
+TRACE: 2015/08/04 03:32:55 connection.go:156: Sending Message: NAMES #go-bot-test
+TRACE: 2015/08/04 03:32:55 connection.go:156: Sending Message: PRIVMSG #go-bot-test :broadcast test
+TRACE: 2015/08/04 03:32:55 bot.go:57: NOTICE:  *** Checking Ident
+TRACE: 2015/08/04 03:32:56 connection.go:156: Sending Message: PART #go-bot-test
+TRACE: 2015/08/04 03:32:56 connection.go:156: Sending Message: QUIT
+WARNING: 2015/08/04 03:32:56 reconn.go:24: unix listener error:  accept unix @go-bot/irc: use of closed network connection
+--- PASS: TestBroadcast-8 (2.25s)
+=== RUN TestMessage-8
+TRACE: 2015/08/04 03:32:57 connection.go:85: Connecting to server
+TRACE: 2015/08/04 03:32:57 connection.go:60: Connected successfuly!
+TRACE: 2015/08/04 03:32:57 connection.go:156: Sending Message: USER go-bot %!s(int=8) * :go-bot
+TRACE: 2015/08/04 03:32:57 connection.go:156: Sending Message: NICK go-bot
+TRACE: 2015/08/04 03:32:57 bot.go:57: 439:  Please wait while we process your connection.
+TRACE: 2015/08/04 03:32:57 bot.go:57: NOTICE:  *** Found your hostname (cached)
+TRACE: 2015/08/04 03:32:57 connection.go:156: Sending Message: JOIN #go-bot-test
+TRACE: 2015/08/04 03:32:57 bot.go:57: NOTICE:  *** Checking Ident
+TRACE: 2015/08/04 03:32:57 connection.go:156: Sending Message: NAMES #go-bot-test
+TRACE: 2015/08/04 03:32:57 connection.go:156: Sending Message: PRIVMSG #go-bot-test :Message test
+TRACE: 2015/08/04 03:32:57 connection.go:156: Sending Message: PART #go-bot-test
+TRACE: 2015/08/04 03:32:58 connection.go:156: Sending Message: QUIT
+WARNING: 2015/08/04 03:32:58 reconn.go:24: unix listener error:  accept unix @go-bot/irc: use of closed network connection
+--- PASS: TestMessage-8 (2.31s)
+=== RUN TestHijack-8
+TRACE: 2015/08/04 03:32:59 connection.go:85: Connecting to server
+TRACE: 2015/08/04 03:32:59 connection.go:60: Connected successfuly!
+TRACE: 2015/08/04 03:32:59 connection.go:156: Sending Message: USER go-bot %!s(int=8) * :go-bot
+TRACE: 2015/08/04 03:32:59 connection.go:156: Sending Message: NICK go-bot
+TRACE: 2015/08/04 03:32:59 bot.go:57: 439:  Please wait while we process your connection.
+TRACE: 2015/08/04 03:32:59 connection.go:156: Sending Message: JOIN #go-bot-test
+TRACE: 2015/08/04 03:32:59 connection.go:156: Sending Message: NAMES #go-bot-test
+TRACE: 2015/08/04 03:32:59 bot.go:57: NOTICE:  *** Found your hostname (cached)
+TRACE: 2015/08/04 03:32:59 bot.go:57: NOTICE:  *** Checking Ident
+TRACE: 2015/08/04 03:33:00 reconn.go:38: Listening for Hijack attempt
+TRACE: 2015/08/04 03:33:00 connection.go:51: Hijack:  true
+TRACE: 2015/08/04 03:33:00 connection.go:156: Sending Message: USER go-bot %!s(int=8) * :go-bot
+TRACE: 2015/08/04 03:33:00 connection.go:156: Sending Message: NICK go-bot
+panic: send on closed channel
+
+goroutine 29 [running]:
+github.com/Luminarys/gochat.(*connection).readMessages(0xc2080942d0)
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/connection.go:147 +0x3f9
+created by github.com/Luminarys/gochat.makeConn
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/connection.go:63 +0x629
+
+goroutine 1 [chan receive]:
+testing.RunTests(0x6fb930, 0x7c3040, 0x5, 0x5, 0xd099dc658d346b01)
+	/usr/lib/go/src/testing/testing.go:556 +0xad6
+testing.(*M).Run(0xc2080741e0, 0x7cd0a0)
+	/usr/lib/go/src/testing/testing.go:485 +0x6c
+main.main()
+	github.com/Luminarys/gochat/_test/_testmain.go:60 +0x1d5
+
+goroutine 28 [chan receive]:
+github.com/Luminarys/gochat.NewBot(0x6b4c50, 0x12, 0x68cbb0, 0x6, 0x1, 0xc208074640, 0x0, 0x0)
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/bot.go:44 +0x484
+github.com/Luminarys/gochat.TestHijack(0xc208094240)
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/gochat_test.go:64 +0x1db
+testing.tRunner(0xc208094240, 0x7c30a0)
+	/usr/lib/go/src/testing/testing.go:447 +0xbf
+created by testing.RunTests
+	/usr/lib/go/src/testing/testing.go:555 +0xa8b
+
+goroutine 17 [syscall, locked to thread]:
+runtime.goexit()
+	/usr/lib/go/src/runtime/asm_amd64.s:2232 +0x1
+
+goroutine 7 [chan receive]:
+github.com/Luminarys/gochat.(*connection).writeMessages(0xc208094120)
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/connection.go:155 +0x6c
+created by github.com/Luminarys/gochat.makeConn
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/connection.go:64 +0x643
+
+goroutine 21 [chan receive]:
+github.com/Luminarys/gochat.(*connection).writeMessages(0xc2080941b0)
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/connection.go:155 +0x6c
+created by github.com/Luminarys/gochat.makeConn
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/connection.go:64 +0x643
+
+goroutine 35 [sleep]:
+github.com/Luminarys/gochat.(*Channel).HandleLogs(0xc2080b4480)
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/channel.go:127 +0x2d
+created by github.com/Luminarys/gochat.(*Bot).NewChannel
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/channel.go:34 +0x1f1
+
+goroutine 34 [sleep]:
+github.com/Luminarys/gochat.(*Channel).HandleLogs(0xc2080b4280)
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/channel.go:127 +0x2d
+created by github.com/Luminarys/gochat.(*Bot).NewChannel
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/channel.go:34 +0x1f1
+
+goroutine 25 [chan receive]:
+github.com/Luminarys/gochat.(*connection).writeMessages(0xc2080ec090)
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/connection.go:155 +0x6c
+created by github.com/Luminarys/gochat.makeConn
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/connection.go:64 +0x643
+
+goroutine 12 [chan receive]:
+github.com/Luminarys/gochat.(*connection).writeMessages(0xc20810c090)
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/connection.go:155 +0x6c
+created by github.com/Luminarys/gochat.makeConn
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/connection.go:64 +0x643
+
+goroutine 51 [sleep]:
+github.com/Luminarys/gochat.(*Channel).HandleLogs(0xc2080c4340)
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/channel.go:127 +0x2d
+created by github.com/Luminarys/gochat.(*Bot).NewChannel
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/channel.go:34 +0x1f1
+
+goroutine 15 [sleep]:
+github.com/Luminarys/gochat.(*Channel).HandleLogs(0xc20807a6c0)
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/channel.go:127 +0x2d
+created by github.com/Luminarys/gochat.(*Bot).NewChannel
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/channel.go:34 +0x1f1
+
+goroutine 16 [IO wait]:
+net.(*pollDesc).Wait(0xc20811e140, 0x72, 0x0, 0x0)
+	/usr/lib/go/src/net/fd_poll_runtime.go:84 +0x47
+net.(*pollDesc).WaitRead(0xc20811e140, 0x0, 0x0)
+	/usr/lib/go/src/net/fd_poll_runtime.go:89 +0x43
+net.(*netFD).Read(0xc20811e0e0, 0xc208123000, 0x1000, 0x1000, 0x0, 0x7f99d3e09dc0, 0xc20812c000)
+	/usr/lib/go/src/net/fd_unix.go:242 +0x40f
+net.(*conn).Read(0xc208108020, 0xc208123000, 0x1000, 0x1000, 0x0, 0x0, 0x0)
+	/usr/lib/go/src/net/net.go:121 +0xdc
+bufio.(*Scanner).Scan(0xc2080b8900, 0xc208123000)
+	/usr/lib/go/src/bufio/scan.go:180 +0x688
+github.com/Luminarys/gochat.(*connection).readMessages(0xc2080ec120)
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/connection.go:128 +0x1b5
+created by github.com/Luminarys/gochat.makeConn
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/connection.go:63 +0x629
+
+goroutine 66 [chan receive]:
+github.com/Luminarys/gochat.(*connection).writeMessages(0xc2080ec120)
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/connection.go:155 +0x6c
+created by github.com/Luminarys/gochat.makeConn
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/connection.go:64 +0x643
+
+goroutine 67 [IO wait]:
+net.(*pollDesc).Wait(0xc20811e1b0, 0x72, 0x0, 0x0)
+	/usr/lib/go/src/net/fd_poll_runtime.go:84 +0x47
+net.(*pollDesc).WaitRead(0xc20811e1b0, 0x0, 0x0)
+	/usr/lib/go/src/net/fd_poll_runtime.go:89 +0x43
+net.(*netFD).accept(0xc20811e150, 0x0, 0x7f99d3e09dc0, 0xc2080b62f8)
+	/usr/lib/go/src/net/fd_unix.go:419 +0x40b
+net.(*UnixListener).AcceptUnix(0xc208104380, 0x7f99d3e0d110, 0x0, 0x0)
+	/usr/lib/go/src/net/unixsock_posix.go:282 +0x56
+github.com/Luminarys/gochat.(*connection).startUnixListener(0xc2080ec120)
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/reconn.go:22 +0x16f
+created by github.com/Luminarys/gochat.makeConn
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/connection.go:65 +0x65d
+
+goroutine 68 [chan receive]:
+github.com/Luminarys/gochat.(*Bot).handleMessages(0xc208106230, 0xc20810a240)
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/bot.go:52 +0x69
+created by github.com/Luminarys/gochat.NewBot
+	/home/eumen/Programming/Go/src/github.com/Luminarys/gochat/bot.go:39 +0x407
+exit status 2
+FAIL	github.com/Luminarys/gochat	10.698s

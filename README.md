@@ -71,6 +71,7 @@ func main() {
 Now, whenever a user types ".ping" into a channel, the bot will respond with "Pong!".
 
 #TODO
+* Fix up reconns
 * Add in more useful modules
 * Allow for global vs. channel modules
 * Add in a more comprehensive permissions system

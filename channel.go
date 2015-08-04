@@ -2,7 +2,6 @@ package gochat
 
 import (
 	"fmt"
-	"github.com/thoj/go-ircevent"
 	"os"
 	"strconv"
 	"strings"
@@ -17,33 +16,9 @@ type Channel struct {
 	Ignored map[string]bool
 }
 
-type Message struct {
-	Nick string
-	Text string
-}
-
 //Creates and joins a new channel
 func (bot *Bot) NewChannel(channel string) *Channel {
-	Ops := make(map[string]bool, 0)
-	ready := make(chan bool)
-
-	i := bot.Conn.AddCallback("353", func(e *irc.Event) {
-		for _, nick := range strings.Split(e.Message(), " ") {
-			if i := strings.Index(nick, "@"); i == 0 {
-				Ops[nick[1:]] = true
-			} else {
-				//Have to deal with other signs like %
-				Ops[nick] = false
-			}
-		}
-		ready <- true
-	})
-
-	bot.Conn.Join(channel)
-	bot.Conn.SendRaw("NAMES")
-	<-ready
-	close(ready)
-	bot.Conn.RemoveCallback("353", i)
+	Ops := make(map[string]bool)
 
 	ignore := make(map[string]bool)
 	ignore[bot.Nick] = true
@@ -61,17 +36,26 @@ func (bot *Bot) NewChannel(channel string) *Channel {
 	return c
 }
 
+func (c *Channel) SetOps(message string) {
+	for _, nick := range strings.Split(message, " ") {
+		if i := strings.Index(nick, "@"); i == 0 {
+			c.Ops[nick[1:]] = true
+		} else {
+			//Have to deal with other signs like %
+			c.Ops[nick] = false
+		}
+	}
+}
+
 //Broadcasts a message on a channel.
 func (c *Channel) Say(message string) {
-	c.Bot.Conn.Privmsg(c.Name, message)
+	c.Bot.Conn.privmsg(c.Name, message)
 	c.Buffer = append(c.Buffer, &Message{Nick: c.Bot.Nick, Text: message})
 }
 
 //Leaves a channel and destroys the channel struct
 func (c *Channel) Part() {
-	c.Bot.Conn.Part(c.Name)
-	c.Bot.Channels[c.Name] = nil
-	c = nil
+	c.Bot.Part(c.Name)
 }
 
 //Handles a message in a channel.
@@ -105,12 +89,12 @@ func (c *Channel) UnignoreNick(nick string) {
 }
 
 //Handles mode changes for users in a chan
-func (c *Channel) ModeChange(e *irc.Event) {
-	fmt.Println(e.Arguments)
-	if e.Arguments[1] == "+o" {
-		c.Ops[e.Arguments[2]] = true
-	} else if e.Arguments[1] == "-o" {
-		c.Ops[e.Arguments[2]] = false
+func (c *Channel) ModeChange(m *Message) {
+	fmt.Println(m.Arguments)
+	if m.Arguments[1] == "+o" {
+		c.Ops[m.Arguments[2]] = true
+	} else if m.Arguments[1] == "-o" {
+		c.Ops[m.Arguments[2]] = false
 	}
 }
 

@@ -2,7 +2,7 @@ package gochat
 
 import (
 	"errors"
-	"github.com/thoj/go-ircevent"
+	"os"
 )
 
 type Bot struct {
@@ -10,23 +10,22 @@ type Bot struct {
 	Nick     string
 	Channels map[string]*Channel
 	Modules  []Module
-	Conn     *irc.Connection
+	Conn     *connection
 }
 
 //Creates a new bot for a server, and returns it once it is ready
-func NewBot(server string, nick string) (*Bot, error) {
-	conn := irc.IRC(nick, nick) //Create new irc connection
-	if err := conn.Connect(server); err != nil {
+func NewBot(server, nick string, hijack bool) (*Bot, error) {
+	logInit(os.Stdout, os.Stderr, os.Stderr)
+	conn, err := makeConn(server, nick, false, hijack) //Create new irc connection
+	if err != nil {
 		return nil, errors.New("Error! Could not connect")
 	}
 
-	ready := make(chan bool)
-	//ready once we get the welcome message(001)
+	/*ready once we get the welcome message(001)
 	conn.AddCallback("001", func(e *irc.Event) {
 		ready <- true
 	})
-	<-ready
-	close(ready)
+	close(ready)*/
 
 	bot := &Bot{
 		Server:   server,
@@ -36,19 +35,34 @@ func NewBot(server string, nick string) (*Bot, error) {
 		Conn:     conn,
 	}
 
-	//Whenever a message is detected, send it to the respective channel for handling
-	conn.AddCallback("PRIVMSG", func(e *irc.Event) {
-		bot.Channels[e.Arguments[0]].HandleMessage(&Message{Nick: e.Nick, Text: e.Message()})
-	})
+	ready := make(chan bool)
+	go bot.handleMessages(ready)
 
-	//Whenever a message is detected, send it to the respective channel for handling
-	conn.AddCallback("MODE", func(e *irc.Event) {
-		if e.Nick != nick {
-			bot.Channels[e.Arguments[0]].ModeChange(e)
-		}
-	})
+	bot.Conn.user(nick)
+	bot.Conn.nick(nick)
+
+	<-ready
+	close(ready)
 
 	return bot, nil
+}
+
+func (bot *Bot) handleMessages(ready chan bool) {
+	r := false
+	for msg := range bot.Conn.ReadChan {
+		if !r {
+			ready <- true
+			r = true
+		}
+		LTrace.Println(msg.Cmd+": ", msg.Text)
+		if msg.Cmd == "PRIVMSG" {
+			bot.Channels[msg.Arguments[0]].HandleMessage(msg)
+		} else if msg.Cmd == "MODE" {
+			bot.Channels[msg.Arguments[0]].ModeChange(msg)
+		} else if msg.Cmd == "353" {
+			bot.Channels[msg.Arguments[2]].SetOps(msg.Text)
+		}
+	}
 }
 
 //Loads a module into the bot
@@ -60,18 +74,25 @@ func (bot *Bot) AddModule(mod Module) {
 func (bot *Bot) JoinChan(chanName string) *Channel {
 	c := bot.NewChannel(chanName)
 	bot.Channels[chanName] = c
+	bot.Conn.send("JOIN " + chanName)
+	bot.Conn.send("NAMES " + chanName)
 	return c
 }
 
 //Disconnects and destroys the bot
 func (bot *Bot) Quit() {
-	bot.Conn.Quit()
-	bot = nil
+	bot.Conn.quit()
 }
 
 //Broadcasts a message to all chans
 func (bot *Bot) Broadcast(message string) {
 	for _, c := range bot.Channels {
-		bot.Conn.Privmsg(c.Name, message)
+		bot.Conn.privmsg(c.Name, message)
 	}
+}
+
+//Leaves a channel and destroys it
+func (bot *Bot) Part(channel string) {
+	bot.Conn.send("PART " + channel)
+	bot.Channels[channel] = nil
 }
