@@ -28,6 +28,8 @@ These modules are built into the bot and can be easily imported and loaded with 
 * Channel Joining: The bot will join a new channel on ".join [channel]". Note that this require operator status to run
 * Quoting: The bot will display a somewhat recent quote from a user on ".quote [nick]"
 * Cute Pics: The bot will provide a link to a random cute picture obtained from /c/ on ".cute"
+* Bot Report: The bot will report in on ".bots"
+* Nick Ignore: The bot will ignore or unignore a nick on ".ignore [nick]" and ".unignore [nick]" respectively
 
 To load in the default modules you can write code as such:
 ```
