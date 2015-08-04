@@ -12,7 +12,8 @@ import (
 
 //Returns a link to a random cute pic, courtesy of /c/
 type CuteMod struct {
-	Pics []string
+	Updating bool
+	Pics     []string
 }
 
 type catalog []page
@@ -56,6 +57,7 @@ func (m *CuteMod) IsValid(msg *gochat.Message, c *gochat.Channel) bool {
 }
 
 func (m *CuteMod) Update() {
+	m.Updating = true
 	response, err := http.Get("https://a.4cdn.org/c/catalog.json")
 	urls := make([]string, 0)
 	if err != nil {
@@ -91,11 +93,11 @@ func (m *CuteMod) Update() {
 		}
 	}
 	m.Pics = urls
-
+	m.Updating = false
 }
 
 func (m *CuteMod) Init() {
-	m.Update()
+	go m.Update()
 	go func() {
 		time.Sleep(30 * time.Minute)
 		m.Update()
@@ -103,8 +105,12 @@ func (m *CuteMod) Init() {
 }
 
 func (m *CuteMod) ParseMessage(msg *gochat.Message, c *gochat.Channel) string {
-	if len(m.Pics) > 0 {
-		return "Here's a random cute pic: " + m.Pics[rand.Intn(len(m.Pics)-1)]
+	if !m.Updating {
+		if len(m.Pics) > 0 {
+			return "Here's a random cute pic: " + m.Pics[rand.Intn(len(m.Pics)-1)]
+		}
+		return "I couldn't find anything cute, you may want to try again later!"
+	} else {
+		return "I'm currently busy refilling with moe, try again later!!"
 	}
-	return "I couldn't find anything cute, you may want to try again later!"
 }

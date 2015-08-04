@@ -10,10 +10,11 @@ import (
 )
 
 type Channel struct {
-	Name   string
-	Buffer []*Message
-	Bot    *Bot
-	Ops    map[string]bool
+	Name    string
+	Buffer  []*Message
+	Bot     *Bot
+	Ops     map[string]bool
+	Ignored map[string]bool
 }
 
 type Message struct {
@@ -44,11 +45,15 @@ func (bot *Bot) NewChannel(channel string) *Channel {
 	close(ready)
 	bot.Conn.RemoveCallback("353", i)
 
+	ignore := make(map[string]bool)
+	ignore[bot.Nick] = true
+
 	c := &Channel{
-		Name:   channel,
-		Buffer: make([]*Message, 0),
-		Bot:    bot,
-		Ops:    Ops,
+		Name:    channel,
+		Buffer:  make([]*Message, 0),
+		Bot:     bot,
+		Ops:     Ops,
+		Ignored: ignore,
 	}
 
 	go c.HandleLogs()
@@ -73,8 +78,9 @@ func (c *Channel) Part() {
 func (c *Channel) HandleMessage(msg *Message) {
 	fmt.Println(msg.Text)
 	c.Buffer = append(c.Buffer, msg)
-	for _, mod := range c.Bot.Modules {
-		if msg.Nick != c.Bot.Nick {
+	//If the nick is not in the ignore list or has their value set to false, then don't process the messages
+	if ignored, exists := c.Ignored[msg.Nick]; !ignored || !exists {
+		for _, mod := range c.Bot.Modules {
 			if mod.IsValid(msg, c) {
 				//Handle the action asynchronously
 				go func(mod Module) {
@@ -86,6 +92,16 @@ func (c *Channel) HandleMessage(msg *Message) {
 			}
 		}
 	}
+}
+
+//Ignores a nick, preferrably for a bot, but also potentially for spammers
+func (c *Channel) IgnoreNick(nick string) {
+	c.Ignored[nick] = true
+}
+
+//Unignores a nick in the channel
+func (c *Channel) UnignoreNick(nick string) {
+	c.Ignored[nick] = false
 }
 
 //Handles mode changes for users in a chan

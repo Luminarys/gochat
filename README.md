@@ -21,7 +21,7 @@ func main() {
 ```
 
 #Default Modules
-These modules are built into the bot and can be loaded with bot.LoadDefaultModules(). The currently available modules are:
+These modules are built into the bot and can be easily imported and loaded with the LoadDefaultModules() function. The currently available modules are:
 * Ping-Pong: The bot says "Pong!" on a user saying ".ping"
 * URL Title Getting: The bot will display the title of a URL whenever a user types on into the chat
 * Sedding: The bot will revise your previous message when you say "s/[old phrase]/[new phrase]/"
