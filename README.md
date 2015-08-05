@@ -76,5 +76,3 @@ Now, whenever a user types ".ping" into a channel, the bot will respond with "Po
 * Allow for global vs. channel modules
 * Add in a more comprehensive permissions system
 * Use configuration files or flags
-* Move away from the go-ircevent library and become a standalone library
-

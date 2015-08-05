@@ -27,6 +27,7 @@ type connection struct {
 
 	// Whether or not this is a reconnect instance
 	reconnect bool
+	hijacked  bool
 
 	// Duration to wait between sending of messages to avoid being
 	// kicked by the server for flooding (default 200ms)
@@ -43,28 +44,36 @@ func makeConn(server, nick string, UseTLS, recon bool) (*connection, error) {
 	conn.unixastr = fmt.Sprintf("@%s/irc", nick)
 	conn.UseTLS = UseTLS
 	conn.ThrottleDelay = time.Millisecond * 200
+	conn.hijacked = false
 
-	// Attempt reconnection
-	var hijack bool
-	if recon {
-		hijack = conn.hijackSession()
-		LTrace.Println("Hijack: ", hijack)
+	err := conn.connect(server)
+	if err != nil {
+		LWarning.Println("Could not connect!")
+		return nil, err
 	}
-
-	if !hijack {
-		err := conn.connect(server)
-		if err != nil {
-			LWarning.Println("Could not connect!")
-			return nil, err
-		}
-		LTrace.Println("Connected successfuly!")
-	}
+	LTrace.Println("Connected successfuly!")
 
 	go conn.readMessages()
 	go conn.writeMessages()
-	go conn.startUnixListener()
 
 	return conn, nil
+}
+
+func makeReconn(server, nick string, nconn net.Conn) *connection {
+	conn := new(connection)
+
+	conn.ReadChan = make(chan *Message, 20)
+	conn.WriteChan = make(chan string, 20)
+	conn.Nick = nick
+	conn.unixastr = fmt.Sprintf("@%s/irc", nick)
+	conn.ThrottleDelay = time.Millisecond * 200
+	conn.hijacked = true
+	conn.Conn = nconn
+
+	go conn.readMessages()
+	go conn.writeMessages()
+
+	return conn
 }
 
 func (c *connection) user(user string) {
@@ -102,20 +111,24 @@ func (c *connection) connect(server string) error {
 
 //Quits and destroys connection
 func (c *connection) quit() {
-	c.WriteChan <- "QUIT"
-	time.Sleep(time.Millisecond * 50)
-	c.unixlist.Close()
-	c.Conn.Close()
+	if !c.hijacked {
+		c.WriteChan <- "QUIT"
+		time.Sleep(time.Millisecond * 50)
+		c.unixlist.Close()
+		c.Conn.Close()
+	}
 	c = nil
 }
 
 //Sends a private message to a user or channel
 func (c *connection) privmsg(who, text string) {
-	for len(text) > 400 {
-		c.send("PRIVMSG " + who + " :" + text[:400])
-		text = text[400:]
+	if !c.hijacked {
+		for len(text) > 400 {
+			c.send("PRIVMSG " + who + " :" + text[:400])
+			text = text[400:]
+		}
+		c.send("PRIVMSG " + who + " :" + text)
 	}
-	c.send("PRIVMSG " + who + " :" + text)
 }
 
 func (c *connection) send(msg string) {
@@ -124,8 +137,9 @@ func (c *connection) send(msg string) {
 
 //Loop to read messages
 func (c *connection) readMessages() {
+	LTrace.Println("Started read message loop")
 	scan := bufio.NewScanner(c.Conn)
-	for scan.Scan() {
+	for scan.Scan() && !c.hijacked {
 		msg, err := ParseMessage(scan.Text())
 		parsePM(msg)
 		if err != nil {
@@ -148,19 +162,26 @@ func (c *connection) readMessages() {
 		}
 	}
 	close(c.ReadChan)
+	LTrace.Println("Stopped read message loop")
 }
 
 //Loop to write messages
 func (c *connection) writeMessages() {
-	for s := range c.WriteChan {
-		LTrace.Println("Sending Message: " + s)
-		_, err := fmt.Fprint(c.Conn, s+"\r\n")
-		if err != nil {
-			LWarning.Println("Write error, could not send Message("+s+"): ", err.Error())
-			return
+	LTrace.Println("Started write message loop")
+	for !c.hijacked {
+		select {
+		case s := <-c.WriteChan:
+			LTrace.Println("Sending Message: " + s)
+			_, err := fmt.Fprint(c.Conn, s+"\r\n")
+			if err != nil {
+				LWarning.Println("Write error, could not send Message("+s+"): ", err.Error())
+				return
+			}
 		}
 		//time.Sleep(c.ThrottleDelay)
 	}
+	close(c.WriteChan)
+	LTrace.Println("Stopped write message loop")
 }
 func parsePM(m *Message) {
 	msg := m.Text

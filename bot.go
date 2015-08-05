@@ -2,7 +2,10 @@ package gochat
 
 import (
 	"errors"
+	"fmt"
+	"net"
 	"os"
+	"strings"
 )
 
 type Bot struct {
@@ -16,16 +19,24 @@ type Bot struct {
 //Creates a new bot for a server, and returns it once it is ready
 func NewBot(server, nick string, hijack bool) (*Bot, error) {
 	logInit(os.Stdout, os.Stderr, os.Stderr)
-	conn, err := makeConn(server, nick, false, hijack) //Create new irc connection
-	if err != nil {
-		return nil, errors.New("Error! Could not connect")
+	var nconn net.Conn
+	var conn *connection
+	var err error
+	var chans string
+	if !hijack {
+		conn, err = makeConn(server, nick, false, hijack) //Create new irc connection
+		if err != nil {
+			return nil, errors.New("Error! Could not connect")
+		}
+	} else {
+		addr := fmt.Sprintf("@%s/irc", nick)
+		nconn, chans, err = hijackSession(addr)
+		if err != nil {
+			return nil, errors.New("Error! Could not connect: " + err.Error())
+		}
+		conn = makeReconn(server, nick, nconn)
+		LTrace.Println("Succesfully Hijacked session")
 	}
-
-	/*ready once we get the welcome message(001)
-	conn.AddCallback("001", func(e *irc.Event) {
-		ready <- true
-	})
-	close(ready)*/
 
 	bot := &Bot{
 		Server:   server,
@@ -35,14 +46,48 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 		Conn:     conn,
 	}
 
-	ready := make(chan bool)
-	go bot.handleMessages(ready)
+	/*ready once we get the welcome message(001)
+	conn.AddCallback("001", func(e *irc.Event) {
+		ready <- true
+	})
+	close(ready)*/
 
-	bot.Conn.user(nick)
-	bot.Conn.nick(nick)
+	go bot.startUnixListener()
 
-	<-ready
-	close(ready)
+	ready := false
+	if !hijack {
+		bot.Conn.user(nick)
+		bot.Conn.nick(nick)
+	} else {
+		//Load in the channels
+		for _, c := range strings.Split(chans, ",") {
+			if c != "" {
+				ignore := make(map[string]bool)
+				ignore[bot.Nick] = true
+
+				Ops := make(map[string]bool)
+
+				bot.Channels[c] = &Channel{
+					Name:    c,
+					Buffer:  make([]*Message, 0),
+					Bot:     bot,
+					Ops:     Ops,
+					Ignored: ignore,
+				}
+				go func(c string) {
+					for !ready {
+					}
+					bot.Conn.send("NAMES " + c)
+				}(c)
+			}
+		}
+	}
+
+	readyChan := make(chan bool)
+	go bot.handleMessages(readyChan)
+	<-readyChan
+	ready = true
+	close(readyChan)
 
 	return bot, nil
 }
@@ -82,6 +127,7 @@ func (bot *Bot) JoinChan(chanName string) *Channel {
 //Disconnects and destroys the bot
 func (bot *Bot) Quit() {
 	bot.Conn.quit()
+	bot = nil
 }
 
 //Broadcasts a message to all chans
