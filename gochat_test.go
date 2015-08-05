@@ -12,7 +12,7 @@ func TestNew(t *testing.T) {
 		t.Error(err.Error())
 	}
 	bot.Quit()
-	time.Sleep(time.Second)
+	time.Sleep(1500 * time.Millisecond)
 }
 
 //Currently broken
@@ -42,7 +42,7 @@ func TestChanJoin(t *testing.T) {
 	time.Sleep(time.Second)
 	c.Part()
 	bot.Quit()
-	time.Sleep(time.Second)
+	time.Sleep(1500 * time.Millisecond)
 }
 
 func TestBroadcast(t *testing.T) {
@@ -55,7 +55,7 @@ func TestBroadcast(t *testing.T) {
 	time.Sleep(time.Second)
 	c.Part()
 	bot.Quit()
-	time.Sleep(time.Second)
+	time.Sleep(1500 * time.Millisecond)
 }
 
 func TestMessage(t *testing.T) {
@@ -68,5 +68,5 @@ func TestMessage(t *testing.T) {
 	c.Part()
 	time.Sleep(time.Second)
 	bot.Quit()
-	time.Sleep(time.Second)
+	time.Sleep(1500 * time.Millisecond)
 }

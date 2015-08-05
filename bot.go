@@ -2,7 +2,6 @@ package gochat
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"os"
 	"strings"
@@ -29,7 +28,7 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 			return nil, errors.New("Error! Could not connect")
 		}
 	} else {
-		addr := fmt.Sprintf("@%s/irc", nick)
+		addr := "@gochat/irc"
 		nconn, chans, err = hijackSession(addr)
 		if err != nil {
 			return nil, errors.New("Error! Could not connect: " + err.Error())
@@ -52,7 +51,7 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 	})
 	close(ready)*/
 
-	go bot.startUnixListener()
+	//go bot.startUnixListener()
 
 	ready := false
 	if !hijack {

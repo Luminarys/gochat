@@ -2,9 +2,11 @@ package gochat
 
 import (
 	"bufio"
-	"crypto/tls"
+	//"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
+	"os/exec"
 	"strings"
 	"time"
 )
@@ -41,12 +43,36 @@ func makeConn(server, nick string, UseTLS, recon bool) (*connection, error) {
 	conn.ReadChan = make(chan *Message, 20)
 	conn.WriteChan = make(chan string, 20)
 	conn.Nick = nick
-	conn.unixastr = fmt.Sprintf("@%s/irc", nick)
+	conn.unixastr = "/tmp/gochat.sock"
 	conn.UseTLS = UseTLS
 	conn.ThrottleDelay = time.Millisecond * 200
 	conn.hijacked = false
+	debug := false
+	var err error
 
-	err := conn.connect(server)
+	if !debug {
+		cmd := exec.Command("go", "run", "bouncer/bouncer.go")
+		err = cmd.Start()
+		if err != nil {
+			LWarning.Println("Could not start bouncer!")
+			return nil, err
+		}
+		time.Sleep(400 * time.Millisecond)
+		sConn, err := net.Dial("tcp", "127.0.0.1:10001")
+		if err != nil {
+			LWarning.Println("Could not connect to bouncer!")
+			return nil, err
+		}
+		_, err = sConn.Write([]byte(server))
+		if err != nil {
+			LWarning.Println("Could not connect to bouncer!")
+			return nil, err
+		}
+	}
+	//Hang until the socket is created
+	for !exists("/tmp/gochat.sock") {
+	}
+	err = conn.connect(server)
 	if err != nil {
 		LWarning.Println("Could not connect!")
 		return nil, err
@@ -77,7 +103,7 @@ func makeReconn(server, nick string, nconn net.Conn) *connection {
 }
 
 func (c *connection) user(user string) {
-	c.send(fmt.Sprintf("USER %s %s * :%s", user, 8, user))
+	c.send(fmt.Sprintf("USER %s %d * :%s", user, 8, user))
 }
 
 func (c *connection) nick(nick string) {
@@ -90,21 +116,32 @@ func (c *connection) addModule(m Module) {
 
 //Establishes connection to a server
 func (c *connection) connect(server string) error {
-	var err error
-	LTrace.Println("Connecting to server")
-	if c.UseTLS {
-		c.Conn, err = tls.Dial("tcp", server, &tls.Config{})
-		if err != nil {
-			LWarning.Println("Could not connect to server with TLS")
-			return err
-		}
-	} else {
-		c.Conn, err = net.Dial("tcp", server)
-		if err != nil {
-			LWarning.Println("Could not connect to server")
-			return err
-		}
+	LTrace.Println("Connecting to server " + server)
+	unaddr, err := net.ResolveUnixAddr("unix", c.unixastr)
+	if err != nil {
+		return errors.New("Could not resolve unix socket")
 	}
+
+	c.Conn, err = net.DialUnix("unix", nil, unaddr)
+	if err != nil {
+		LError.Println(err.Error())
+		return errors.New("Could not establish connection, bouncer not running.")
+	}
+	/*
+		if c.UseTLS {
+			c.Conn, err = tls.Dial("tcp", server, &tls.Config{})
+			if err != nil {
+				LWarning.Println("Could not connect to server with TLS")
+				return err
+			}
+		} else {
+			c.Conn, err = net.Dial("tcp", server)
+			if err != nil {
+				LWarning.Println("Could not connect to server")
+				return err
+			}
+		}
+	*/
 	c.Server = server
 	return nil
 }
@@ -114,7 +151,6 @@ func (c *connection) quit() {
 	if !c.hijacked {
 		c.WriteChan <- "QUIT"
 		time.Sleep(time.Millisecond * 50)
-		c.unixlist.Close()
 		c.Conn.Close()
 	}
 	c = nil
