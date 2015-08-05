@@ -2,7 +2,6 @@ package gochat
 
 import (
 	"errors"
-	"net"
 	"os"
 	"strings"
 )
@@ -18,23 +17,18 @@ type Bot struct {
 //Creates a new bot for a server, and returns it once it is ready
 func NewBot(server, nick string, hijack bool) (*Bot, error) {
 	logInit(os.Stdout, os.Stderr, os.Stderr)
-	var nconn net.Conn
 	var conn *connection
 	var err error
 	var chans string
-	if !hijack {
-		conn, err = makeConn(server, nick, false, hijack) //Create new irc connection
-		if err != nil {
-			return nil, errors.New("Error! Could not connect")
-		}
-	} else {
-		addr := "@gochat/irc"
-		nconn, chans, err = hijackSession(addr)
+	if hijack {
+		chans, err = hijackSession()
 		if err != nil {
 			return nil, errors.New("Error! Could not connect: " + err.Error())
 		}
-		conn = makeReconn(server, nick, nconn)
-		LTrace.Println("Succesfully Hijacked session")
+	}
+	conn, err = makeConn(server, nick, false, hijack) //Create new irc connection
+	if err != nil {
+		return nil, errors.New("Error! Could not connect")
 	}
 
 	bot := &Bot{
@@ -50,8 +44,6 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 		ready <- true
 	})
 	close(ready)*/
-
-	//go bot.startUnixListener()
 
 	ready := false
 	if !hijack {
@@ -87,6 +79,8 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 	<-readyChan
 	ready = true
 	close(readyChan)
+
+	//go bot.startNetListener()
 
 	return bot, nil
 }

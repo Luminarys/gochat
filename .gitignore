@@ -8,6 +8,7 @@ _obj
 _test
 logs
 bots
+bouncer/btest.go
 
 # Architecture specific extensions/prefixes
 *.[568vq]

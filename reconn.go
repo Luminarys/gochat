@@ -2,39 +2,21 @@ package gochat
 
 import (
 	"errors"
-	"github.com/mudler/sendfd"
 	"net"
 )
 
-//All code here is derived from hellabot/whyrusleeping
-
-//Starts Unix Listener
-func (b *Bot) startUnixListener() {
+//Starts Net Listener
+func (b *Bot) startNetListener() {
 	c := b.Conn
-	unaddr, err := net.ResolveUnixAddr("unix", c.unixastr)
+
+	ln, err := net.Listen("tcp", ":10001")
 	if err != nil {
-		panic(err)
-	}
-	list, err := net.ListenUnix("unix", unaddr)
-	if err != nil {
-		panic(err)
+		LError.Fatalln("Error, could not listen on the port!")
 	}
 
-	c.unixlist = list
-	con, err := list.AcceptUnix()
+	conn, err := ln.Accept()
 	if err != nil {
-		LWarning.Println("unix listener error: ", err)
-		return
-	}
-
-	fi, err := c.Conn.(*net.TCPConn).File()
-	if err != nil {
-		panic(err)
-	}
-
-	err = sendfd.SendFD(con, fi)
-	if err != nil {
-		panic(err)
+		LError.Fatalln("Error, could not accept hijack!")
 	}
 
 	chans := ""
@@ -47,52 +29,36 @@ func (b *Bot) startUnixListener() {
 	}
 	LTrace.Println("Aggregated Chans as string: ", chans)
 
-	_, err = con.Write([]byte(chans))
+	_, err = conn.Write([]byte(chans))
 	if err != nil {
-		LWarning.Println("unix listener error: ", err)
+		LWarning.Println("TCP write error: ", err)
 		return
 	}
-	list.Close()
 
 	LTrace.Println("Hijacked!")
 	c.hijacked = true
 	//c.Conn.Close()
+	conn.Close()
+	ln.Close()
 	b.Quit()
 }
 
-// Attempt to hijack session previously running bot
-func hijackSession(unixAddr string) (net.Conn, string, error) {
-	unaddr, err := net.ResolveUnixAddr("unix", unixAddr)
+// Attempt to hijack session previously running bot, returning some basic state information
+func hijackSession() (string, error) {
+	conn, err := net.Dial("tcp", ":10001")
 	if err != nil {
-		return nil, "", errors.New("Could not resolve unix socket")
-	}
-
-	con, err := net.DialUnix("unix", nil, unaddr)
-	if err != nil {
-		LError.Println(err.Error())
-		return nil, "", errors.New("Could not restablish connection, no prior bot.")
-	}
-
-	ncon, err := sendfd.RecvFD(con)
-	if err != nil {
-		LError.Println(err.Error())
-		return nil, "", err
-	}
-
-	netcon, err := net.FileConn(ncon)
-	if err != nil {
-		LError.Println(err.Error())
-		return nil, "", err
+		LWarning.Println("Could not connect to bouncer!")
+		return "", err
 	}
 
 	var b [4096]byte
 	var n int
-	n, err = con.Read(b[:])
+	n, err = conn.Read(b[:])
 	if err != nil {
 		LError.Println(err.Error())
-		return nil, "", errors.New("Could not receieve channel list!")
+		return "", errors.New("Could not receieve channel list!")
 	}
 	LTrace.Println("Received chan list as: ", string(b[:n]))
 
-	return netcon, string(b[:n]), nil
+	return string(b[:n]), nil
 }

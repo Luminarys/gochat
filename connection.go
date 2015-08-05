@@ -43,14 +43,13 @@ func makeConn(server, nick string, UseTLS, recon bool) (*connection, error) {
 	conn.ReadChan = make(chan *Message, 20)
 	conn.WriteChan = make(chan string, 20)
 	conn.Nick = nick
-	conn.unixastr = "/tmp/gochat.sock"
 	conn.UseTLS = UseTLS
 	conn.ThrottleDelay = time.Millisecond * 200
 	conn.hijacked = false
-	debug := false
 	var err error
+	debug := true
 
-	if !debug {
+	if !recon && !debug {
 		cmd := exec.Command("go", "run", "bouncer/bouncer.go")
 		err = cmd.Start()
 		if err != nil {
@@ -58,7 +57,7 @@ func makeConn(server, nick string, UseTLS, recon bool) (*connection, error) {
 			return nil, err
 		}
 		time.Sleep(400 * time.Millisecond)
-		sConn, err := net.Dial("tcp", "127.0.0.1:10001")
+		sConn, err := net.Dial("tcp", ":10001")
 		if err != nil {
 			LWarning.Println("Could not connect to bouncer!")
 			return nil, err
@@ -85,23 +84,6 @@ func makeConn(server, nick string, UseTLS, recon bool) (*connection, error) {
 	return conn, nil
 }
 
-func makeReconn(server, nick string, nconn net.Conn) *connection {
-	conn := new(connection)
-
-	conn.ReadChan = make(chan *Message, 20)
-	conn.WriteChan = make(chan string, 20)
-	conn.Nick = nick
-	conn.unixastr = fmt.Sprintf("@%s/irc", nick)
-	conn.ThrottleDelay = time.Millisecond * 200
-	conn.hijacked = true
-	conn.Conn = nconn
-
-	go conn.readMessages()
-	go conn.writeMessages()
-
-	return conn
-}
-
 func (c *connection) user(user string) {
 	c.send(fmt.Sprintf("USER %s %d * :%s", user, 8, user))
 }
@@ -117,7 +99,7 @@ func (c *connection) addModule(m Module) {
 //Establishes connection to a server
 func (c *connection) connect(server string) error {
 	LTrace.Println("Connecting to server " + server)
-	unaddr, err := net.ResolveUnixAddr("unix", c.unixastr)
+	unaddr, err := net.ResolveUnixAddr("unix", "/tmp/gochat.sock")
 	if err != nil {
 		return errors.New("Could not resolve unix socket")
 	}
@@ -150,9 +132,8 @@ func (c *connection) connect(server string) error {
 func (c *connection) quit() {
 	if !c.hijacked {
 		c.WriteChan <- "QUIT"
-		time.Sleep(time.Millisecond * 50)
-		c.Conn.Close()
 	}
+	c.Conn.Close()
 	c = nil
 }
 

@@ -42,6 +42,7 @@ func main() {
 		fmt.Println("Could not receieve info!")
 	}
 	conn.Close()
+	ln.Close()
 	server := strings.Trim(string(b[:n]), "\r\n")
 	fmt.Println("Connecting to server: " + server)
 
@@ -58,7 +59,6 @@ func main() {
 	}
 	defer os.Remove("/tmp/gochat.sock")
 	defer servConn.Close()
-	defer ln.Close()
 	defer l.Close()
 
 	//Wait for a client connection, then just copy the two streams into eachother
@@ -69,7 +69,6 @@ func main() {
 			time.Sleep(1200 * time.Millisecond)
 			if !connd {
 				servConn.Close()
-				ln.Close()
 				l.Close()
 				os.Remove("/tmp/gochat.sock")
 				os.Exit(0)
@@ -87,7 +86,6 @@ func main() {
 			if err != nil {
 				if err.Error() == "write unix @: broken pipe" {
 					servConn.Close()
-					ln.Close()
 					l.Close()
 					os.Remove("/tmp/gochat.sock")
 					os.Exit(0)
