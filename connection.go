@@ -1,13 +1,9 @@
 package gochat
 
 import (
-	"errors"
-	//"crypto/tls"
+	"crypto/tls"
 	"fmt"
-	"io"
 	"net"
-	"os"
-	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -56,36 +52,8 @@ func makeConn(server, nick string, UseTLS, recon bool) (*connection, error) {
 	var wg sync.WaitGroup
 	//Require that the read loop, write loop, and hijack listener be shutdown
 	conn.wg = &wg
-	var err error
-	debug := false
 
-	if !recon && !debug {
-		cmd := exec.Command("go", "run", "bouncer/bouncer.go")
-		stdout, err := cmd.StdoutPipe()
-		if err != nil {
-			LWarning.Println("Could not get stdout bouncer!")
-			return nil, err
-		}
-		go io.Copy(os.Stdout, stdout)
-		err = cmd.Start()
-		if err != nil {
-			LWarning.Println("Could not start bouncer!")
-			return nil, err
-		}
-		time.Sleep(400 * time.Millisecond)
-		sConn, err := net.Dial("tcp", ":10001")
-		if err != nil {
-			LWarning.Println("Could not connect to bouncer!")
-			return nil, err
-		}
-		_, err = sConn.Write([]byte(server))
-		if err != nil {
-			LWarning.Println("Could not connect to bouncer!")
-			return nil, err
-		}
-	}
-	time.Sleep(500 * time.Millisecond)
-	err = conn.connect(server)
+	err := conn.connect(server)
 	if err != nil {
 		LWarning.Println("Could not connect!")
 		return nil, err
@@ -115,41 +83,27 @@ func (c *connection) connect(server string) error {
 	LTrace.Println("Connecting to server " + server)
 	var err error
 
-	conn, err := net.Dial("tcp", ":10003")
-	if err != nil {
-		LError.Println(err.Error())
-		return errors.New("Could not establish connection, bouncer not running.")
-	}
-	c.Conn = conn
-
-	/*
-		if c.UseTLS {
-			c.Conn, err = tls.Dial("tcp", server, &tls.Config{})
-			if err != nil {
-				LWarning.Println("Could not connect to server with TLS")
-				return err
-			}
-		} else {
-			c.Conn, err = net.Dial("tcp", server)
-			if err != nil {
-				LWarning.Println("Could not connect to server")
-				return err
-			}
+	if c.UseTLS {
+		c.Conn, err = tls.Dial("tcp", server, &tls.Config{})
+		if err != nil {
+			LWarning.Println("Could not connect to server with TLS")
+			return err
 		}
-	*/
+	} else {
+		c.Conn, err = net.Dial("tcp", server)
+		if err != nil {
+			LWarning.Println("Could not connect to server")
+			return err
+		}
+	}
 	c.Server = server
 	return nil
 }
 
 //Quits and destroys connection
 func (c *connection) quit() {
-	if !c.hijacked {
-		c.wg.Add(3)
-		c.WriteChan <- "QUIT"
-		time.Sleep(50 * time.Millisecond)
-	} else {
-		c.wg.Add(2)
-	}
+	c.wg.Add(2)
+	c.WriteChan <- "QUIT"
 	c.shutdown = true
 	c.wg.Wait()
 	c.Conn.Close()
@@ -173,24 +127,25 @@ func (c *connection) readMessages() {
 	LTrace.Println("Started read message loop")
 	to := make(chan bool)
 	msg := make(chan []byte, 20)
-	for !c.shutdown {
-		//If msg chan is empty, then execute this, otherwise keep on Timing out
-		if len(msg) == 0 {
-			//Probably needs to be a better way of handling this
-			go func() {
-				var b [32 * 1024]byte
-				n, err := c.Conn.Read(b[:])
-				if err != nil {
-					fmt.Println("Error reading from client: ", err.Error())
-					return
-				}
-				msg <- b[:n]
-			}()
+	go func() {
+		var b [32 * 1024]byte
+		for {
+			n, err := c.Conn.Read(b[:])
+			if err != nil {
+				fmt.Println("Error reading from client: ", err.Error())
+				return
+			}
+			msg <- b[:n]
 		}
-		go func() {
+	}()
+	go func() {
+		for {
 			time.Sleep(time.Second)
 			to <- true
-		}()
+		}
+	}()
+	for !c.shutdown {
+		//If msg chan is empty, then execute this, otherwise keep on Timing out
 		select {
 		case m := <-msg:
 			fmt.Println("Received server message: ", string(m))
@@ -227,11 +182,14 @@ func (c *connection) readMessages() {
 func (c *connection) writeMessages() {
 	LTrace.Println("Started write message loop")
 	to := make(chan bool)
-	for !c.shutdown {
-		go func() {
+	go func() {
+		for !c.shutdown {
 			time.Sleep(time.Second)
 			to <- true
-		}()
+		}
+		close(to)
+	}()
+	for !c.shutdown {
 		select {
 		case msg := <-c.WriteChan:
 			fmt.Println("Sending client message: ", string(msg))

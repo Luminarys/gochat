@@ -3,7 +3,6 @@ package gochat
 import (
 	"errors"
 	"os"
-	"strings"
 )
 
 type Bot struct {
@@ -19,7 +18,6 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 	logInit(os.Stdout, os.Stderr, os.Stderr)
 	var conn *connection
 	var err error
-	var chans string
 
 	bot := &Bot{
 		Server:   server,
@@ -28,29 +26,6 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 		Modules:  make([]Module, 0),
 	}
 
-	if hijack {
-		chans, err = hijackSession()
-		if err != nil {
-			return nil, errors.New("Error! Could not connect: " + err.Error())
-		}
-		//Load in the channels
-		for _, c := range strings.Split(chans, ",") {
-			if c != "" {
-				ignore := make(map[string]bool)
-				ignore[bot.Nick] = true
-
-				Ops := make(map[string]bool)
-
-				bot.Channels[c] = &Channel{
-					Name:    c,
-					Buffer:  make([]*Message, 0),
-					Bot:     bot,
-					Ops:     Ops,
-					Ignored: ignore,
-				}
-			}
-		}
-	}
 	conn, err = makeConn(server, nick, false, hijack) //Create new irc connection
 	if err != nil {
 		return nil, errors.New("Error! Could not connect")
@@ -62,29 +37,13 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 	})
 	close(ready)*/
 
-	ready := false
-	if !hijack {
-		bot.Conn.user(nick)
-		bot.Conn.nick(nick)
-	} else {
-		for _, c := range strings.Split(chans, ",") {
-			if c != "" {
-				go func(c string) {
-					for !ready {
-					}
-					bot.Conn.send("NAMES " + c)
-				}(c)
-			}
-		}
-	}
+	bot.Conn.user(nick)
+	bot.Conn.nick(nick)
 
 	readyChan := make(chan bool)
 	go bot.handleMessages(readyChan)
 	<-readyChan
-	ready = true
 	close(readyChan)
-
-	go bot.startNetListener()
 
 	return bot, nil
 }

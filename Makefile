@@ -17,4 +17,3 @@ test:
 	go fmt modules/*.go
 	go vet modules/*.go
 	go test -v github.com/Luminarys/gochat/modules
-	cd modules
