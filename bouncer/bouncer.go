@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -13,7 +13,9 @@ import (
 
 //Listens on port 10001 for initial information then creates the unix socket
 func main() {
-	var connd = false
+	var err error
+	conf_connd := false
+
 	ln, err := net.Listen("tcp", ":10001")
 	if err != nil {
 		fmt.Println("Error, could not listen on the port!")
@@ -21,9 +23,9 @@ func main() {
 	}
 
 	go func() {
-		time.Sleep(1200 * time.Millisecond)
-		if !connd {
-			ln.Close()
+		time.Sleep(1 * time.Second)
+		if !conf_connd {
+			fmt.Println("No connection within acceptable time limits!")
 			os.Exit(0)
 		}
 	}()
@@ -33,7 +35,7 @@ func main() {
 		fmt.Println("Error, could not accpet connection!")
 		os.Exit(1)
 	}
-	connd = true
+	conf_connd = true
 
 	var b [4096]byte
 	var n int
@@ -46,59 +48,141 @@ func main() {
 	server := strings.Trim(string(b[:n]), "\r\n")
 	fmt.Println("Connecting to server: " + server)
 
-	servConn, err := net.Dial("tcp", server)
+	servConn, err := net.Dial("tcp", "irc.rizon.net:6666")
 	if err != nil {
 		fmt.Println("Could not connect to server")
 		panic(err)
 	}
+	serverRead := make(chan []byte, 100)
+	serverWrite := make(chan []byte, 10)
 
-	l, err := net.ListenUnix("unix", &net.UnixAddr{"/tmp/gochat.sock", "unix"})
-	if err != nil {
-		os.Remove("/tmp/gochat.sock")
-		panic(err)
-	}
-	defer os.Remove("/tmp/gochat.sock")
+	go readFromServ(serverRead, servConn)
+	go writeToServ(serverWrite, servConn)
+
 	defer servConn.Close()
-	defer l.Close()
-
 	//Wait for a client connection, then just copy the two streams into eachother
+	l, err := net.Listen("tcp", ":10003")
+	if err != nil {
+		fmt.Println("Error, could not listen on the port!")
+		os.Exit(1)
+	}
+	//Listens for the kill switch
+	ld, err := net.Listen("tcp", ":10004")
+	if err != nil {
+		fmt.Println("Error, could not listen on the port!")
+		os.Exit(1)
+	}
+	defer ld.Close()
+
+	var wg sync.WaitGroup
 	for {
-		connd = false
-		//Timeout function in case we don't get a connection
+		cli_connd := false
 		go func() {
-			time.Sleep(1200 * time.Millisecond)
-			if !connd {
+			time.Sleep(3 * time.Second)
+			if !cli_connd {
 				servConn.Close()
 				l.Close()
-				os.Remove("/tmp/gochat.sock")
+				ld.Close()
 				os.Exit(0)
 			}
 		}()
-		clientConn, err := l.AcceptUnix()
+		wg.Add(2)
+		clientConn, err := l.Accept()
 		if err != nil {
-			os.Remove("/tmp/gochat.sock")
 			panic(err)
 		}
-		connd = true
-		go func() {
-			_, err := io.Copy(clientConn, servConn)
-			fmt.Println(err)
-			if err != nil {
-				if err.Error() == "write unix @: broken pipe" {
-					servConn.Close()
-					l.Close()
-					os.Remove("/tmp/gochat.sock")
-					os.Exit(0)
-				}
-			}
-			return
-		}()
-		_, err = io.Copy(servConn, clientConn)
+		fmt.Println("Receieved client connection!")
+		cli_connd = true
+		var done = false
+		go writeToClient(serverRead, clientConn, &done, &wg)
+		go readFromClient(serverWrite, clientConn, &done, &wg)
+		tc, err := ld.Accept()
+		done = true
+		wg.Wait()
+		fmt.Println("Receieved client disconn, waiting for reconn")
+		clientConn.Close()
+		_, err = tc.Write([]byte("ready"))
 		if err != nil {
-			fmt.Println(err)
-			if err.Error() == "write unix @: broken pipe" {
+			fmt.Println("TCP write error: ", err)
+			return
+		}
+		tc.Close()
+	}
+}
+
+func readFromClient(cr chan []byte, sconn net.Conn, done *bool, wg *sync.WaitGroup) {
+	to := make(chan bool)
+	msg := make(chan []byte, 20)
+	for !*done {
+		//If msg chan is empty, then execute this, otherwise keep on Timing out
+		if len(msg) == 0 {
+			//Probably needs to be a better way of handling this
+			go func() {
+				var b [32 * 1024]byte
+				n, err := sconn.Read(b[:])
+				if err != nil {
+					fmt.Println("Error reading from client: ", err.Error())
+					return
+				}
+				msg <- b[:n]
+			}()
+		}
+		go func() {
+			time.Sleep(time.Second)
+			to <- true
+		}()
+		select {
+		case m := <-msg:
+			fmt.Println("Received client message: ", string(m))
+			cr <- m
+		case <-to:
+		}
+	}
+	wg.Done()
+}
+
+func writeToClient(cw chan []byte, cconn net.Conn, done *bool, wg *sync.WaitGroup) {
+	to := make(chan bool)
+	for !*done {
+		go func() {
+			time.Sleep(time.Second)
+			to <- true
+		}()
+		select {
+		case msg := <-cw:
+			fmt.Println("Sending client message: ", string(msg))
+			_, err := cconn.Write(msg)
+			if err != nil {
+				fmt.Println("TCP write error: ", err)
 				return
 			}
+		case <-to:
+
+		}
+	}
+	wg.Done()
+}
+
+func readFromServ(sr chan []byte, sconn net.Conn) {
+	var b [32 * 1024]byte
+	for {
+		n, err := sconn.Read(b[:])
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		fmt.Println("Received server message: ", string(b[:n]))
+		sr <- b[:n]
+	}
+}
+
+func writeToServ(sw chan []byte, sconn net.Conn) {
+	for msg := range sw {
+		fmt.Println("Sending server message: ", string(msg))
+		_, err := sconn.Write(msg)
+		if err != nil {
+			fmt.Println("TCP write error: ", err)
+			return
 		}
 	}
 }

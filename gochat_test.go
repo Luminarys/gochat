@@ -12,25 +12,8 @@ func TestNew(t *testing.T) {
 		t.Error(err.Error())
 	}
 	bot.Quit()
-	time.Sleep(1500 * time.Millisecond)
+	time.Sleep(2500 * time.Millisecond)
 }
-
-//Currently broken
-/*func TestHijack(t *testing.T) {
-	bot, err := NewBot("irc.rizon.net:6666", "go-bot", false)
-	if err != nil {
-		t.Error(err.Error())
-	}
-	bot.JoinChan("#go-bot-test")
-	time.Sleep(5 * time.Second)
-	bot2, err := NewBot("irc.rizon.net:6666", "go-bot", true)
-	if err != nil {
-		t.Error(err.Error())
-	}
-	time.Sleep(3 * time.Second)
-	bot2.Quit()
-	time.Sleep(time.Second)
-}*/
 
 func TestChanJoin(t *testing.T) {
 	bot, err := NewBot("irc.rizon.net:6666", "go-bot", false)
@@ -42,7 +25,7 @@ func TestChanJoin(t *testing.T) {
 	time.Sleep(time.Second)
 	c.Part()
 	bot.Quit()
-	time.Sleep(1500 * time.Millisecond)
+	time.Sleep(2500 * time.Millisecond)
 }
 
 func TestBroadcast(t *testing.T) {
@@ -55,7 +38,7 @@ func TestBroadcast(t *testing.T) {
 	time.Sleep(time.Second)
 	c.Part()
 	bot.Quit()
-	time.Sleep(1500 * time.Millisecond)
+	time.Sleep(2500 * time.Millisecond)
 }
 
 func TestMessage(t *testing.T) {
@@ -68,5 +51,5 @@ func TestMessage(t *testing.T) {
 	c.Part()
 	time.Sleep(time.Second)
 	bot.Quit()
-	time.Sleep(1500 * time.Millisecond)
+	time.Sleep(2500 * time.Millisecond)
 }

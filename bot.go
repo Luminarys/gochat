@@ -20,36 +20,19 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 	var conn *connection
 	var err error
 	var chans string
-	if hijack {
-		chans, err = hijackSession()
-		if err != nil {
-			return nil, errors.New("Error! Could not connect: " + err.Error())
-		}
-	}
-	conn, err = makeConn(server, nick, false, hijack) //Create new irc connection
-	if err != nil {
-		return nil, errors.New("Error! Could not connect")
-	}
 
 	bot := &Bot{
 		Server:   server,
 		Nick:     nick,
 		Channels: make(map[string]*Channel),
 		Modules:  make([]Module, 0),
-		Conn:     conn,
 	}
 
-	/*ready once we get the welcome message(001)
-	conn.AddCallback("001", func(e *irc.Event) {
-		ready <- true
-	})
-	close(ready)*/
-
-	ready := false
-	if !hijack {
-		bot.Conn.user(nick)
-		bot.Conn.nick(nick)
-	} else {
+	if hijack {
+		chans, err = hijackSession()
+		if err != nil {
+			return nil, errors.New("Error! Could not connect: " + err.Error())
+		}
 		//Load in the channels
 		for _, c := range strings.Split(chans, ",") {
 			if c != "" {
@@ -65,6 +48,27 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 					Ops:     Ops,
 					Ignored: ignore,
 				}
+			}
+		}
+	}
+	conn, err = makeConn(server, nick, false, hijack) //Create new irc connection
+	if err != nil {
+		return nil, errors.New("Error! Could not connect")
+	}
+	bot.Conn = conn
+	/*ready once we get the welcome message(001)
+	conn.AddCallback("001", func(e *irc.Event) {
+		ready <- true
+	})
+	close(ready)*/
+
+	ready := false
+	if !hijack {
+		bot.Conn.user(nick)
+		bot.Conn.nick(nick)
+	} else {
+		for _, c := range strings.Split(chans, ",") {
+			if c != "" {
 				go func(c string) {
 					for !ready {
 					}
@@ -80,7 +84,7 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 	ready = true
 	close(readyChan)
 
-	//go bot.startNetListener()
+	go bot.startNetListener()
 
 	return bot, nil
 }
@@ -120,7 +124,6 @@ func (bot *Bot) JoinChan(chanName string) *Channel {
 //Disconnects and destroys the bot
 func (bot *Bot) Quit() {
 	bot.Conn.quit()
-	bot = nil
 }
 
 //Broadcasts a message to all chans
