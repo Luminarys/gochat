@@ -83,6 +83,7 @@ func hijackSession() (string, error) {
 		return "", errors.New("Could not receieve channel list!")
 	}
 	LTrace.Println("Received chan list as: ", string(b[:n]))
+	chanList := string(b[:n])
 
 	n, err = conn.Read(b[:])
 	if err != nil {
@@ -107,5 +108,5 @@ func hijackSession() (string, error) {
 	tc.Close()
 	time.Sleep(2 * time.Second)
 	conn.Close()
-	return string(b[:n]), nil
+	return chanList, nil
 }

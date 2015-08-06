@@ -36,6 +36,7 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 		//Load in the channels
 		for _, c := range strings.Split(chans, ",") {
 			if c != "" {
+				LTrace.Println("Loading in prev. channel: ", c)
 				ignore := make(map[string]bool)
 				ignore[bot.Nick] = true
 
@@ -91,6 +92,7 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 
 func (bot *Bot) handleMessages(ready chan bool) {
 	r := false
+	LTrace.Println("Started bot message handler")
 	for msg := range bot.Conn.ReadChan {
 		if !r {
 			ready <- true
@@ -114,20 +116,23 @@ func (bot *Bot) AddModule(mod Module) {
 
 //Joins a channel
 func (bot *Bot) JoinChan(chanName string) *Channel {
+	LTrace.Println("Trying to join chan")
 	c := bot.NewChannel(chanName)
 	bot.Channels[chanName] = c
 	bot.Conn.send("JOIN " + chanName)
-	bot.Conn.send("NAMES " + chanName)
 	return c
 }
 
 //Disconnects and destroys the bot
 func (bot *Bot) Quit() {
+	LTrace.Println("Trying to quit bot")
 	bot.Conn.quit()
+	bot = nil
 }
 
 //Broadcasts a message to all chans
 func (bot *Bot) Broadcast(message string) {
+	LTrace.Println("Broadcasting message")
 	for _, c := range bot.Channels {
 		bot.Conn.privmsg(c.Name, message)
 	}
@@ -135,6 +140,7 @@ func (bot *Bot) Broadcast(message string) {
 
 //Leaves a channel and destroys it
 func (bot *Bot) Part(channel string) {
+	LTrace.Println("Parting channel ", channel)
 	bot.Conn.send("PART " + channel)
 	bot.Channels[channel] = nil
 }

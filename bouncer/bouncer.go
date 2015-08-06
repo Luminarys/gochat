@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net"
 	"os"
 	"strings"
@@ -14,25 +14,33 @@ import (
 //Listens on port 10001 for initial information then creates the unix socket
 func main() {
 	var err error
+
+	f, err := os.OpenFile("/tmp/bouncer-log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
+
+	log.SetOutput(f)
 	conf_connd := false
 
 	ln, err := net.Listen("tcp", ":10001")
 	if err != nil {
-		fmt.Println("Error, could not listen on the port!")
+		log.Println("Error, could not listen on the port!")
 		os.Exit(1)
 	}
 
 	go func() {
 		time.Sleep(1 * time.Second)
 		if !conf_connd {
-			fmt.Println("No connection within acceptable time limits!")
+			log.Println("No connection within acceptable time limits!")
 			os.Exit(0)
 		}
 	}()
 
 	conn, err := ln.Accept()
 	if err != nil {
-		fmt.Println("Error, could not accpet connection!")
+		log.Println("Error, could not accpet connection!")
 		os.Exit(1)
 	}
 	conf_connd = true
@@ -41,16 +49,16 @@ func main() {
 	var n int
 	n, err = conn.Read(b[:])
 	if err != nil {
-		fmt.Println("Could not receieve info!")
+		log.Println("Could not receieve info!")
 	}
 	conn.Close()
 	ln.Close()
 	server := strings.Trim(string(b[:n]), "\r\n")
-	fmt.Println("Connecting to server: " + server)
+	log.Println("Connecting to server: " + server)
 
 	servConn, err := net.Dial("tcp", "irc.rizon.net:6666")
 	if err != nil {
-		fmt.Println("Could not connect to server")
+		log.Println("Could not connect to server")
 		panic(err)
 	}
 	serverRead := make(chan []byte, 100)
@@ -63,13 +71,13 @@ func main() {
 	//Wait for a client connection, then just copy the two streams into eachother
 	l, err := net.Listen("tcp", ":10003")
 	if err != nil {
-		fmt.Println("Error, could not listen on the port!")
+		log.Println("Error, could not listen on the port!")
 		os.Exit(1)
 	}
 	//Listens for the kill switch
 	ld, err := net.Listen("tcp", ":10004")
 	if err != nil {
-		fmt.Println("Error, could not listen on the port!")
+		log.Println("Error, could not listen on the port!")
 		os.Exit(1)
 	}
 	defer ld.Close()
@@ -80,6 +88,7 @@ func main() {
 		go func() {
 			time.Sleep(3 * time.Second)
 			if !cli_connd {
+				log.Println("Connection timed out, shutting down!")
 				servConn.Close()
 				l.Close()
 				ld.Close()
@@ -91,7 +100,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("Receieved client connection!")
+		log.Println("Receieved client connection!")
 		cli_connd = true
 		var done = false
 		go writeToClient(serverRead, clientConn, &done, &wg)
@@ -99,11 +108,11 @@ func main() {
 		tc, err := ld.Accept()
 		done = true
 		wg.Wait()
-		fmt.Println("Receieved client disconn, waiting for reconn")
+		log.Println("Receieved client disconn, waiting for reconn")
 		clientConn.Close()
 		_, err = tc.Write([]byte("ready"))
 		if err != nil {
-			fmt.Println("TCP write error: ", err)
+			log.Println("TCP write error: ", err)
 			return
 		}
 		tc.Close()
@@ -121,7 +130,7 @@ func readFromClient(cr chan []byte, sconn net.Conn, done *bool, wg *sync.WaitGro
 				var b [32 * 1024]byte
 				n, err := sconn.Read(b[:])
 				if err != nil {
-					fmt.Println("Error reading from client: ", err.Error())
+					log.Println("Error reading from client: ", err.Error())
 					return
 				}
 				msg <- b[:n]
@@ -133,8 +142,12 @@ func readFromClient(cr chan []byte, sconn net.Conn, done *bool, wg *sync.WaitGro
 		}()
 		select {
 		case m := <-msg:
-			fmt.Println("Received client message: ", string(m))
-			cr <- m
+			log.Println("Received client message: ", string(m))
+			for _, msg := range strings.Split(string(m), "\r\n") {
+				if len(msg) > 4 {
+					cr <- []byte(msg + "\r\n")
+				}
+			}
 		case <-to:
 		}
 	}
@@ -142,18 +155,18 @@ func readFromClient(cr chan []byte, sconn net.Conn, done *bool, wg *sync.WaitGro
 }
 
 func writeToClient(cw chan []byte, cconn net.Conn, done *bool, wg *sync.WaitGroup) {
-	to := make(chan bool)
 	for !*done {
+		to := make(chan bool)
 		go func() {
 			time.Sleep(time.Second)
 			to <- true
 		}()
 		select {
 		case msg := <-cw:
-			fmt.Println("Sending client message: ", string(msg))
+			log.Println("Sending client message: ", string(msg))
 			_, err := cconn.Write(msg)
 			if err != nil {
-				fmt.Println("TCP write error: ", err)
+				log.Println("TCP write error: ", err)
 				return
 			}
 		case <-to:
@@ -168,20 +181,20 @@ func readFromServ(sr chan []byte, sconn net.Conn) {
 	for {
 		n, err := sconn.Read(b[:])
 		if err != nil {
-			fmt.Println(err.Error())
+			log.Println(err.Error())
 			return
 		}
-		fmt.Println("Received server message: ", string(b[:n]))
+		log.Println("Received server message: ", string(b[:n]))
 		sr <- b[:n]
 	}
 }
 
 func writeToServ(sw chan []byte, sconn net.Conn) {
 	for msg := range sw {
-		fmt.Println("Sending server message: ", string(msg))
+		log.Println("Sending server message: ", string(msg))
 		_, err := sconn.Write(msg)
 		if err != nil {
-			fmt.Println("TCP write error: ", err)
+			log.Println("TCP write error: ", err)
 			return
 		}
 	}

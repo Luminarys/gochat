@@ -1,6 +1,7 @@
 package gochat
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -22,7 +23,7 @@ func TestChanJoin(t *testing.T) {
 	}
 
 	c := bot.JoinChan("#go-bot-test")
-	time.Sleep(time.Second)
+	time.Sleep(2 * time.Second)
 	c.Part()
 	bot.Quit()
 	time.Sleep(2500 * time.Millisecond)
@@ -33,10 +34,14 @@ func TestBroadcast(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
+	fmt.Println("Trying to join chan")
 	c := bot.JoinChan("#go-bot-test")
+	fmt.Println("Trying to send broadcast")
 	bot.Broadcast("broadcast test")
-	time.Sleep(time.Second)
+	time.Sleep(2 * time.Second)
+	fmt.Println("Trying to send part message")
 	c.Part()
+	fmt.Println("Trying to send quit message")
 	bot.Quit()
 	time.Sleep(2500 * time.Millisecond)
 }
@@ -48,8 +53,8 @@ func TestMessage(t *testing.T) {
 	}
 	c := bot.JoinChan("#go-bot-test")
 	c.Say("Message test")
+	time.Sleep(2 * time.Second)
 	c.Part()
-	time.Sleep(time.Second)
 	bot.Quit()
 	time.Sleep(2500 * time.Millisecond)
 }

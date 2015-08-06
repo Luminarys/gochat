@@ -1,8 +1,8 @@
 package gochat
 
 import (
-	"errors"
-	//"crypto/tls"
+	//"errors"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -57,9 +57,9 @@ func makeConn(server, nick string, UseTLS, recon bool) (*connection, error) {
 	//Require that the read loop, write loop, and hijack listener be shutdown
 	conn.wg = &wg
 	var err error
-	debug := false
+	bouncer := false
 
-	if !recon && !debug {
+	if !recon && bouncer {
 		cmd := exec.Command("go", "run", "bouncer/bouncer.go")
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
@@ -84,7 +84,7 @@ func makeConn(server, nick string, UseTLS, recon bool) (*connection, error) {
 			return nil, err
 		}
 	}
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(700 * time.Millisecond)
 	err = conn.connect(server)
 	if err != nil {
 		LWarning.Println("Could not connect!")
@@ -114,36 +114,44 @@ func (c *connection) addModule(m Module) {
 func (c *connection) connect(server string) error {
 	LTrace.Println("Connecting to server " + server)
 	var err error
-
-	conn, err := net.Dial("tcp", ":10003")
-	if err != nil {
-		LError.Println(err.Error())
-		return errors.New("Could not establish connection, bouncer not running.")
-	}
-	c.Conn = conn
-
 	/*
-		if c.UseTLS {
-			c.Conn, err = tls.Dial("tcp", server, &tls.Config{})
-			if err != nil {
-				LWarning.Println("Could not connect to server with TLS")
-				return err
-			}
-		} else {
-			c.Conn, err = net.Dial("tcp", server)
-			if err != nil {
-				LWarning.Println("Could not connect to server")
-				return err
-			}
+		conn, err := net.Dial("tcp", ":10003")
+		tries := 0
+		for err != nil && tries < 20 {
+			LError.Println("Bouncer not running, retrying net conn: ", err.Error())
+			conn, err = net.Dial("tcp", ":10003")
+			time.Sleep(100 * time.Millisecond)
+			tries++
 		}
+		if err != nil {
+			return errors.New("Couldn't connect!")
+		}
+		c.Conn = conn
 	*/
+
+	if c.UseTLS {
+		c.Conn, err = tls.Dial("tcp", server, &tls.Config{})
+		if err != nil {
+			LWarning.Println("Could not connect to server with TLS")
+			return err
+		}
+	} else {
+		c.Conn, err = net.Dial("tcp", server)
+		if err != nil {
+			LWarning.Println("Could not connect to server")
+			return err
+		}
+	}
+
 	c.Server = server
 	return nil
 }
 
 //Quits and destroys connection
 func (c *connection) quit() {
+	LTrace.Println("Quitting connection!")
 	if !c.hijacked {
+		LTrace.Println("Sending shutdown sigs!")
 		c.wg.Add(3)
 		c.WriteChan <- "QUIT"
 		time.Sleep(50 * time.Millisecond)
@@ -151,7 +159,24 @@ func (c *connection) quit() {
 		c.wg.Add(2)
 	}
 	c.shutdown = true
+	LTrace.Println("Waiting for all loops to shutdown")
 	c.wg.Wait()
+
+	//Sends kill message to the server
+	/*
+		tc, err := net.Dial("tcp", ":10004")
+		if err != nil {
+			LWarning.Println("Could not send kill message to server!")
+		}
+		var b [4096]byte
+		_, err = tc.Read(b[:])
+		if err != nil {
+			LError.Println("Could not receieve bouncer ready sig: ", err.Error())
+		}
+
+		LTrace.Println("Bouncer is done!")
+		tc.Close()
+	*/
 	c.Conn.Close()
 }
 
@@ -171,28 +196,31 @@ func (c *connection) send(msg string) {
 //Loop to read messages
 func (c *connection) readMessages() {
 	LTrace.Println("Started read message loop")
-	to := make(chan bool)
-	msg := make(chan []byte, 20)
-	for !c.shutdown {
-		//If msg chan is empty, then execute this, otherwise keep on Timing out
-		if len(msg) == 0 {
-			//Probably needs to be a better way of handling this
-			go func() {
-				var b [32 * 1024]byte
-				n, err := c.Conn.Read(b[:])
-				if err != nil {
-					fmt.Println("Error reading from client: ", err.Error())
-					return
-				}
-				msg <- b[:n]
-			}()
+
+	msgCh := make(chan []byte, 20)
+	go func() {
+		var b [32 * 1024]byte
+		for {
+			n, err := c.Conn.Read(b[:])
+			if err != nil {
+				LWarning.Println("Error reading from server: ", err.Error())
+				return
+			}
+			msgCh <- b[:n]
 		}
-		go func() {
+	}()
+
+	to := make(chan bool)
+	go func() {
+		for {
 			time.Sleep(time.Second)
 			to <- true
-		}()
+		}
+	}()
+	for !c.shutdown {
+		//If msg chan is empty, then execute this, otherwise keep on Timing out
 		select {
-		case m := <-msg:
+		case m := <-msgCh:
 			fmt.Println("Received server message: ", string(m))
 			msg, err := ParseMessage(string(m))
 			parsePM(msg)
@@ -226,8 +254,8 @@ func (c *connection) readMessages() {
 //Loop to write messages
 func (c *connection) writeMessages() {
 	LTrace.Println("Started write message loop")
-	to := make(chan bool)
 	for !c.shutdown {
+		to := make(chan bool, 1)
 		go func() {
 			time.Sleep(time.Second)
 			to <- true
