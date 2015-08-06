@@ -1,10 +1,10 @@
 # GoChat
 [![Build Status](https://travis-ci.org/Luminarys/gochat.svg?branch=master)](https://travis-ci.org/Luminarys/gochat) [![GoDoc](https://godoc.org/github.com/Luminarys/gochat?status.png)](https://godoc.org/github.com/Luminarys/gochat) 
 
-A simple modular IRC library written in Go, using go-ircevent.
+A simple modular IRC library written in Go.
 
 # Requirements
-Gochat currently uses the go-ircevent library, though this is likely to change soon. You can install it by running `go get github.com/thoj/go-ircevent`.
+Golang, and a working internet connection
 
 #Setup
 A simple bot that joins a test channel then leaves can be written as such:
@@ -71,7 +71,7 @@ func main() {
 Now, whenever a user types ".ping" into a channel, the bot will respond with "Pong!".
 
 #TODO
-* Fix up reconns
+* Improve connection handling/irc library in general.
 * Add in more useful modules
 * Allow for global vs. channel modules
 * Add in a more comprehensive permissions system
