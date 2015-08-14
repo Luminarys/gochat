@@ -179,12 +179,14 @@ func (c *connection) readMessages() {
 //Loop to write messages
 func (c *connection) writeMessages() {
 	LTrace.Println("Started write message loop")
-
+	w := bufio.NewWriter(c.Conn)
 	for msg := range c.WriteChan {
 		fmt.Println("Sending server message: ", string(msg))
-		_, err := c.Conn.Write([]byte(msg + "\r\n"))
+		_, err := w.WriteString(msg + "\r\n")
 		if err != nil {
 			LWarning.Println("Write error, could not send Message("+msg+"): ", err.Error())
+		} else {
+			w.Flush()
 		}
 	}
 	LTrace.Println("Stopped write message loop")
