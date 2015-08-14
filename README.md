@@ -30,6 +30,7 @@ These modules are built into the bot and can be easily imported and loaded with 
 * Cute Pics: The bot will provide a link to a random cute picture obtained from /c/ on ".cute"
 * Bot Report: The bot will report in on ".bots"
 * Nick Ignore: The bot will ignore or unignore a nick on ".ignore [nick]" and ".unignore [nick]" respectively
+* Say: The bot will say [msg] on ".say [msg]"
 
 To load in the default modules you can write code as such:
 ```
@@ -70,9 +71,16 @@ func main() {
 ```
 Now, whenever a user types ".ping" into a channel, the bot will respond with "Pong!".
 
+#Users
+Gochat utilizes a permissions system based on iotas, where users have a mode of:
+* Normal
+* Halfop
+* Operator
+* Admin
+* Owner
+These should be used to compare user permissions, e.g. if you want to ensure that a user is operator or higher to execute a command, you would check that `(your channel).Users[(user nick)].CMode >= gochat.Halfop`
+
 #TODO
 * Improve connection handling/irc library in general.
 * Add in more useful modules
-* Allow for global vs. channel modules
-* Add in a more comprehensive permissions system
 * Use configuration files or flags

@@ -11,7 +11,7 @@ type IgnoreMod struct {
 
 func (m *IgnoreMod) IsValid(msg *gochat.Message, c *gochat.Channel) bool {
 	parts := strings.Split(msg.Text, " ")
-	if isOp, regd := c.Ops[msg.Nick]; isOp && regd {
+	if u, exists := c.Users[msg.Nick]; exists && u.CMode >= gochat.Halfop {
 		return (parts[0] == ".ignore" || parts[0] == ".unignore") && len(parts) > 1
 	}
 	return false
@@ -20,8 +20,8 @@ func (m *IgnoreMod) IsValid(msg *gochat.Message, c *gochat.Channel) bool {
 func (m *IgnoreMod) ParseMessage(msg *gochat.Message, c *gochat.Channel) string {
 	parts := strings.Split(msg.Text, " ")
 
-	if isOp, regd := c.Ops[parts[1]]; isOp && regd {
-		return "Sorry, but I can't ignore operators"
+	if u, exists := c.Users[parts[1]]; exists && u.CMode >= c.Users[msg.Nick].CMode {
+		return msg.Nick + ": Sorry, but I can't ignore or unignore users of mode higher than you"
 	}
 	if parts[0] == ".ignore" {
 		c.IgnoreNick(parts[1])

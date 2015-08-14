@@ -14,7 +14,7 @@ func (m *ChanJoinMod) IsValid(msg *gochat.Message, c *gochat.Channel) bool {
 	cmd := parts[0]
 	if cmd != ".join" {
 		return false
-	} else if val, ok := c.Ops[msg.Nick]; ok && val {
+	} else if u, ok := c.Users[msg.Nick]; ok && u.CMode >= gochat.Operator {
 		return true
 	}
 	return false

@@ -55,6 +55,10 @@ func (bot *Bot) handleMessages(ready chan bool) {
 	r := false
 	LTrace.Println("Starting message handling loop")
 	for msg := range bot.Conn.ReadChan {
+		//Ignore everything when shutting down
+		if bot.Conn.shutdown {
+			continue
+		}
 		if msg.Cmd == "PRIVMSG" {
 			//Check that channel is valid
 			if _, ok := bot.Channels[msg.Arguments[0]]; ok {
@@ -65,16 +69,18 @@ func (bot *Bot) handleMessages(ready chan bool) {
 				c := bot.NewChannel(msg.Nick)
 				c.HandleMessage(msg)
 			}
-		} else if msg.Cmd == "MODE" {
-			if _, ok := bot.Channels[msg.Arguments[0]]; ok {
-				bot.Channels[msg.Arguments[0]].ModeChange(msg)
-			} else if !r {
-				LTrace.Println("Got mode message")
-				ready <- true
-				r = true
-			}
+		} else if msg.Cmd == "MODE" || msg.Cmd == "JOIN" || msg.Cmd == "PART" {
+			//Requery state information so we don't have to keep track
+			//of a bunch of dumb +v +h +o states
+			bot.Conn.send("NAMES " + msg.Arguments[0])
 		} else if msg.Cmd == "353" {
-			bot.Channels[msg.Arguments[2]].SetOps(msg.Text)
+			if c, ok := bot.Channels[msg.Arguments[2]]; ok && c != nil {
+				c.SetUsers(msg.Text)
+			}
+		}
+		if !r {
+			ready <- true
+			r = true
 		}
 	}
 }

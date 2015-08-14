@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -12,15 +11,17 @@ type Channel struct {
 	Name    string
 	Buffer  []*Message
 	Bot     *Bot
-	Ops     map[string]bool
 	Ignored map[string]bool
 	Ready   bool
+	Users   map[string]*User
+	Me      *User
+	Modules []Module
 }
 
 //Creates and joins a new channel
 func (bot *Bot) NewChannel(channel string) *Channel {
-	Ops := make(map[string]bool)
-
+	users := make(map[string]*User)
+	me := &User{}
 	ignore := make(map[string]bool)
 	ignore[bot.Nick] = true
 
@@ -28,9 +29,10 @@ func (bot *Bot) NewChannel(channel string) *Channel {
 		Name:    channel,
 		Buffer:  make([]*Message, 0),
 		Bot:     bot,
-		Ops:     Ops,
 		Ignored: ignore,
 		Ready:   false,
+		Users:   users,
+		Me:      me,
 	}
 
 	go c.HandleLogs()
@@ -38,15 +40,8 @@ func (bot *Bot) NewChannel(channel string) *Channel {
 	return c
 }
 
-func (c *Channel) SetOps(message string) {
-	for _, nick := range strings.Split(message, " ") {
-		if i := strings.Index(nick, "@"); i == 0 {
-			c.Ops[nick[1:]] = true
-		} else {
-			//Have to deal with other signs like %
-			c.Ops[nick] = false
-		}
-	}
+func (c *Channel) SetUsers(message string) {
+	c.Users, c.Me = parseUsers(message, c.Name)
 	c.Ready = true
 }
 
@@ -61,6 +56,11 @@ func (c *Channel) Part() {
 	c.Bot.Part(c.Name)
 }
 
+//Loads a module into the chan
+func (c *Channel) AddModule(mod Module) {
+	c.Modules = append(c.Modules, mod)
+}
+
 //Handles a message in a channel.
 func (c *Channel) HandleMessage(msg *Message) {
 	fmt.Println(msg.Text)
@@ -68,6 +68,18 @@ func (c *Channel) HandleMessage(msg *Message) {
 	//If the nick is not in the ignore list or has their value set to false, then don't process the messages
 	if ignored, exists := c.Ignored[msg.Nick]; !ignored || !exists {
 		for _, mod := range c.Bot.Modules {
+			if mod.IsValid(msg, c) {
+				//Handle the action asynchronously
+				go func(mod Module) {
+					res := mod.ParseMessage(msg, c)
+					if res != "" {
+						c.Say(res)
+					}
+				}(mod)
+			}
+		}
+		//Parse local modules
+		for _, mod := range c.Modules {
 			if mod.IsValid(msg, c) {
 				//Handle the action asynchronously
 				go func(mod Module) {
@@ -89,16 +101,6 @@ func (c *Channel) IgnoreNick(nick string) {
 //Unignores a nick in the channel
 func (c *Channel) UnignoreNick(nick string) {
 	c.Ignored[nick] = false
-}
-
-//Handles mode changes for users in a chan
-func (c *Channel) ModeChange(m *Message) {
-	fmt.Println(m.Arguments)
-	if m.Arguments[1] == "+o" {
-		c.Ops[m.Arguments[2]] = true
-	} else if m.Arguments[1] == "-o" {
-		c.Ops[m.Arguments[2]] = false
-	}
 }
 
 //Dumps current logs into a file and wipes the Buffer

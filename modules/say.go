@@ -16,5 +16,5 @@ func (m *SayMod) IsValid(msg *gochat.Message, c *gochat.Channel) bool {
 
 func (m *SayMod) ParseMessage(msg *gochat.Message, c *gochat.Channel) string {
 	parts := strings.Split(msg.Text, " ")
-    return strings.Join(parts[1:], " ")
+	return strings.Join(parts[1:], " ")
 }
