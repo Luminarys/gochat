@@ -14,6 +14,7 @@ type Channel struct {
 	Bot     *Bot
 	Ops     map[string]bool
 	Ignored map[string]bool
+	Ready   bool
 }
 
 //Creates and joins a new channel
@@ -29,6 +30,7 @@ func (bot *Bot) NewChannel(channel string) *Channel {
 		Bot:     bot,
 		Ops:     Ops,
 		Ignored: ignore,
+		Ready:   false,
 	}
 
 	go c.HandleLogs()
@@ -45,6 +47,7 @@ func (c *Channel) SetOps(message string) {
 			c.Ops[nick] = false
 		}
 	}
+	c.Ready = true
 }
 
 //Broadcasts a message on a channel.

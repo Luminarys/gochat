@@ -50,11 +50,8 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 
 func (bot *Bot) handleMessages(ready chan bool) {
 	r := false
+	LTrace.Println("Starting message handling loop")
 	for msg := range bot.Conn.ReadChan {
-		if !r {
-			ready <- true
-			r = true
-		}
 		LTrace.Println(msg.Cmd+": ", msg.Text)
 		if msg.Cmd == "PRIVMSG" {
 			//Check that channel is valid
@@ -71,6 +68,11 @@ func (bot *Bot) handleMessages(ready chan bool) {
 		} else if msg.Cmd == "353" {
 			bot.Channels[msg.Arguments[2]].SetOps(msg.Text)
 		}
+		if !r {
+			LTrace.Println("Got init message")
+			ready <- true
+			r = true
+		}
 	}
 }
 
@@ -84,6 +86,8 @@ func (bot *Bot) JoinChan(chanName string) *Channel {
 	c := bot.NewChannel(chanName)
 	bot.Channels[chanName] = c
 	bot.Conn.send("JOIN " + chanName)
+	for !c.Ready {
+	}
 	return c
 }
 
