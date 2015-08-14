@@ -126,9 +126,7 @@ func (c *connection) privmsg(who, text string) {
 }
 
 func (c *connection) send(msg string) {
-	LTrace.Println("Trying to send a message to the WriteChan")
 	c.WriteChan <- msg
-	LTrace.Println("Sent message to WriteChan!")
 }
 
 //Loop to read messages
@@ -190,6 +188,7 @@ func (c *connection) writeMessages() {
 		} else {
 			w.Flush()
 		}
+		LTrace.Println("Message written to conn! Waiting for next WriteChan message.")
 	}
 	LTrace.Println("Stopped write message loop")
 	c.wg.Done()
