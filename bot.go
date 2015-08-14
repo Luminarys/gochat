@@ -37,13 +37,13 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 	})
 	close(ready)*/
 
-	bot.Conn.user(nick)
-	bot.Conn.nick(nick)
-
 	readyChan := make(chan bool)
 	go bot.handleMessages(readyChan)
 	<-readyChan
 	close(readyChan)
+
+	bot.Conn.user(nick)
+	bot.Conn.nick(nick)
 
 	return bot, nil
 }
@@ -84,7 +84,6 @@ func (bot *Bot) JoinChan(chanName string) *Channel {
 	c := bot.NewChannel(chanName)
 	bot.Channels[chanName] = c
 	bot.Conn.send("JOIN " + chanName)
-	bot.Conn.send("NAMES " + chanName)
 	return c
 }
 
