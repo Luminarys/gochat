@@ -21,7 +21,7 @@ func (m *IgnoreMod) ParseMessage(msg *gochat.Message, c *gochat.Channel) string 
 	parts := strings.Split(msg.Text, " ")
 
 	if u, exists := c.Users[parts[1]]; exists && u.CMode >= c.Users[msg.Nick].CMode {
-		return msg.Nick + ": Sorry, but I can't ignore or unignore users of mode higher than you"
+		return msg.Nick + ": Sorry, but I can only ignore/unignore users of mode lower than you"
 	}
 	if parts[0] == ".ignore" {
 		c.IgnoreNick(parts[1])
