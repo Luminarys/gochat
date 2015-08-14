@@ -126,11 +126,7 @@ func (c *connection) privmsg(who, text string) {
 }
 
 func (c *connection) send(msg string) {
-	fmt.Println("Sending server message: ", string(msg))
-	_, err := c.Conn.Write([]byte(msg + "\r\n"))
-	if err != nil {
-		LWarning.Println("Write error, could not send Message("+msg+"): ", err.Error())
-	}
+	c.WriteChan <- msg
 }
 
 //Loop to read messages
@@ -146,7 +142,7 @@ func (c *connection) readMessages() {
 	for !c.shutdown {
 		select {
 		case m := <-rawMsgChan:
-			fmt.Println("Received server message: ", m)
+			LTrace.Println("Received server message: ", m)
 			msg, err := ParseMessage(m)
 			parsePM(msg)
 			if err != nil {
@@ -165,9 +161,6 @@ func (c *connection) readMessages() {
 				}
 			}
 			if !used {
-				if len(c.ReadChan) > 19 {
-					LTrace.Println("ReadChan full, blocking")
-				}
 				c.ReadChan <- msg
 			}
 
@@ -183,16 +176,12 @@ func (c *connection) readMessages() {
 //Loop to write messages
 func (c *connection) writeMessages() {
 	LTrace.Println("Started write message loop")
-	w := bufio.NewWriter(c.Conn)
 	for msg := range c.WriteChan {
-		fmt.Println("Sending server message: ", string(msg))
-		_, err := w.WriteString(msg + "\r\n")
+		LTrace.Println("Sending server message: ", string(msg))
+		_, err := c.Conn.Write([]byte(msg + "\r\n"))
 		if err != nil {
 			LWarning.Println("Write error, could not send Message("+msg+"): ", err.Error())
-		} else {
-			w.Flush()
 		}
-		LTrace.Println("Message written to conn! Waiting for next WriteChan message.")
 	}
 	LTrace.Println("Stopped write message loop")
 	c.wg.Done()

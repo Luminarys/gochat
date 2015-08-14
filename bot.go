@@ -54,7 +54,6 @@ func (bot *Bot) handleMessages(ready chan bool) {
 	r := false
 	LTrace.Println("Starting message handling loop")
 	for msg := range bot.Conn.ReadChan {
-		LTrace.Println("Receieved message: ", msg)
 		if msg.Cmd == "PRIVMSG" {
 			//Check that channel is valid
 			if _, ok := bot.Channels[msg.Arguments[0]]; ok {
