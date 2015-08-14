@@ -2,7 +2,7 @@ package gcModules
 
 import (
 	"github.com/Luminarys/gochat"
-    "strings"
+	"strings"
 )
 
 //Say module. If a user says .say [msg] the bot will repeat into the channel [msg]
@@ -16,5 +16,5 @@ func (m *SayMod) IsValid(msg *gochat.Message, c *gochat.Channel) bool {
 
 func (m *SayMod) ParseMessage(msg *gochat.Message, c *gochat.Channel) string {
 	parts := strings.Split(msg.Text, " ")
-	return parts[1];
+	return parts[1]
 }

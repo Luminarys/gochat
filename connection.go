@@ -1,6 +1,7 @@
 package gochat
 
 import (
+	"bufio"
 	"crypto/tls"
 	"fmt"
 	"net"
@@ -125,52 +126,30 @@ func (c *connection) send(msg string) {
 //Loop to read messages
 func (c *connection) readMessages() {
 	LTrace.Println("Started read message loop")
-	to := make(chan bool)
-	msg := make(chan []byte, 20)
-	go func() {
-		var b [32 * 1024]byte
-		for {
-			n, err := c.Conn.Read(b[:])
-			if err != nil {
-				fmt.Println("Error reading from client: ", err.Error())
-				return
-			}
-			msg <- b[:n]
-		}
-	}()
-	go func() {
-		for {
-			time.Sleep(time.Second)
-			to <- true
-		}
-	}()
-	for !c.shutdown {
+	s := bufio.NewScanner(c.Conn)
+	for !c.shutdown && s.Scan() {
 		//If msg chan is empty, then execute this, otherwise keep on Timing out
-		select {
-		case m := <-msg:
-			fmt.Println("Received server message: ", string(m))
-			msg, err := ParseMessage(string(m))
-			parsePM(msg)
-			if err != nil {
-				continue
-			}
-			used := false
-			//Attempt to utilize low level modules, if not then pass it into the chan
-			for _, mod := range c.Modules {
-				if mod.IsValid(msg, nil) {
-					res := mod.ParseMessage(msg, nil)
-					if res != "" {
-						c.WriteChan <- res
-					}
-					used = true
-					break
+		m := s.Text()
+		fmt.Println("Received server message: ", m)
+		msg, err := ParseMessage(m)
+		parsePM(msg)
+		if err != nil {
+			continue
+		}
+		used := false
+		//Attempt to utilize low level modules, if not then pass it into the chan
+		for _, mod := range c.Modules {
+			if mod.IsValid(msg, nil) {
+				res := mod.ParseMessage(msg, nil)
+				if res != "" {
+					c.WriteChan <- res
 				}
+				used = true
+				break
 			}
-			if !used {
-				c.ReadChan <- msg
-			}
-		case <-to:
-			LTrace.Println("Read loop timed out!")
+		}
+		if !used {
+			c.ReadChan <- msg
 		}
 	}
 	close(c.ReadChan)
