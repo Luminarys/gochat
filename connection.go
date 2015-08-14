@@ -109,7 +109,7 @@ func (c *connection) connect(server string) error {
 //Quits and destroys connection
 func (c *connection) quit() {
 	c.wg.Add(2)
-	c.WriteChan <- "QUIT"
+	c.send("QUIT")
 	c.shutdown = true
 	close(c.WriteChan)
 	c.wg.Wait()
@@ -126,7 +126,11 @@ func (c *connection) privmsg(who, text string) {
 }
 
 func (c *connection) send(msg string) {
-	c.WriteChan <- msg
+	fmt.Println("Sending server message: ", string(msg))
+	_, err := c.Conn.Write([]byte(msg + "\r\n"))
+	if err != nil {
+		LWarning.Println("Write error, could not send Message("+msg+"): ", err.Error())
+	}
 }
 
 //Loop to read messages
