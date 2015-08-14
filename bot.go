@@ -57,7 +57,15 @@ func (bot *Bot) handleMessages(ready chan bool) {
 		}
 		LTrace.Println(msg.Cmd+": ", msg.Text)
 		if msg.Cmd == "PRIVMSG" {
-			bot.Channels[msg.Arguments[0]].HandleMessage(msg)
+			//Check that channel is valid
+			if _, ok := bot.Channels[msg.Arguments[0]]; ok {
+				bot.Channels[msg.Arguments[0]].HandleMessage(msg)
+			} else {
+				//Otherwise it's probably a user, so instantiate a
+				//temporary user channel to handle things
+				c := bot.NewChannel(msg.Arguments[0])
+				c.HandleMessage(msg)
+			}
 		} else if msg.Cmd == "MODE" {
 			bot.Channels[msg.Arguments[0]].ModeChange(msg)
 		} else if msg.Cmd == "353" {

@@ -27,4 +27,6 @@ func LoadDefaultModules(bot *gochat.Bot) {
 	bot.AddModule(&BotReportMod{})
 
 	bot.AddModule(&IgnoreMod{})
+
+	bot.AddModule(&SayMod{})
 }
