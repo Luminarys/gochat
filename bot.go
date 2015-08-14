@@ -3,6 +3,7 @@ package gochat
 import (
 	"errors"
 	"os"
+	"time"
 )
 
 type Bot struct {
@@ -93,6 +94,8 @@ func (bot *Bot) JoinChan(chanName string) *Channel {
 	bot.Conn.send("JOIN " + chanName)
 
 	for !c.Ready {
+		//Give other procs a chance to execute
+		time.Sleep(100 * time.Millisecond)
 	}
 	LTrace.Println("Channel is ready!")
 

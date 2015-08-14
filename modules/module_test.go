@@ -14,10 +14,11 @@ func TestModules(t *testing.T) {
 
 	LoadDefaultModules(bot)
 
+	time.Sleep(1 * time.Second)
+
 	c := bot.JoinChan("#go-bot-test")
 	time.Sleep(5 * time.Second)
 	c.Part()
 	time.Sleep(2 * time.Second)
 	bot.Quit()
-	time.Sleep(2 * time.Second)
 }
