@@ -11,10 +11,10 @@ type SayMod struct {
 
 func (m *SayMod) IsValid(msg *gochat.Message, c *gochat.Channel) bool {
 	parts := strings.Split(msg.Text, " ")
-	return parts[0] == ".say" && len(parts) == 2
+	return parts[0] == ".say" && len(parts) >= 2
 }
 
 func (m *SayMod) ParseMessage(msg *gochat.Message, c *gochat.Channel) string {
 	parts := strings.Split(msg.Text, " ")
-	return parts[1]
+    return strings.Join(parts[1:], " ")
 }

@@ -62,7 +62,7 @@ func (bot *Bot) handleMessages(ready chan bool) {
 			} else {
 				//Otherwise it's probably a user, so instantiate a
 				//temporary user channel to handle things
-				c := bot.NewChannel(msg.Arguments[0])
+				c := bot.NewChannel(msg.Nick)
 				c.HandleMessage(msg)
 			}
 		} else if msg.Cmd == "MODE" {
