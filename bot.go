@@ -3,7 +3,6 @@ package gochat
 import (
 	"errors"
 	"os"
-	"time"
 )
 
 type Bot struct {
@@ -40,14 +39,14 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 
 	readyChan := make(chan bool)
 	go bot.handleMessages(readyChan)
-	<-readyChan
-	close(readyChan)
 
 	bot.Conn.user(nick)
 	bot.Conn.nick(nick)
 
-	time.Sleep(time.Second)
+	<-readyChan
+	close(readyChan)
 
+	LTrace.Println("Succesfully intialized a bot!")
 	return bot, nil
 }
 
@@ -55,7 +54,6 @@ func (bot *Bot) handleMessages(ready chan bool) {
 	r := false
 	LTrace.Println("Starting message handling loop")
 	for msg := range bot.Conn.ReadChan {
-		LTrace.Println(msg.Cmd+": ", msg.Text)
 		if msg.Cmd == "PRIVMSG" {
 			//Check that channel is valid
 			if _, ok := bot.Channels[msg.Arguments[0]]; ok {
@@ -67,14 +65,15 @@ func (bot *Bot) handleMessages(ready chan bool) {
 				c.HandleMessage(msg)
 			}
 		} else if msg.Cmd == "MODE" {
-			bot.Channels[msg.Arguments[0]].ModeChange(msg)
+			if _, ok := bot.Channels[msg.Arguments[0]]; ok {
+				bot.Channels[msg.Arguments[0]].ModeChange(msg)
+			} else if !r {
+				LTrace.Println("Got mode message")
+				ready <- true
+				r = true
+			}
 		} else if msg.Cmd == "353" {
 			bot.Channels[msg.Arguments[2]].SetOps(msg.Text)
-		}
-		if !r {
-			LTrace.Println("Got init message")
-			ready <- true
-			r = true
 		}
 	}
 }

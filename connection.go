@@ -43,7 +43,7 @@ type connection struct {
 func makeConn(server, nick string, UseTLS, recon bool) (*connection, error) {
 	conn := new(connection)
 
-	conn.ReadChan = make(chan *Message, 20)
+	conn.ReadChan = make(chan *Message, 200)
 	conn.WriteChan = make(chan string, 20)
 	conn.Nick = nick
 	conn.UseTLS = UseTLS
@@ -111,6 +111,7 @@ func (c *connection) quit() {
 	c.wg.Add(2)
 	c.WriteChan <- "QUIT"
 	c.shutdown = true
+	close(c.WriteChan)
 	c.wg.Wait()
 	c.Conn.Close()
 }
@@ -131,30 +132,43 @@ func (c *connection) send(msg string) {
 //Loop to read messages
 func (c *connection) readMessages() {
 	LTrace.Println("Started read message loop")
-	s := bufio.NewScanner(c.Conn)
-	for !c.shutdown && s.Scan() {
-		//If msg chan is empty, then execute this, otherwise keep on Timing out
-		m := s.Text()
-		fmt.Println("Received server message: ", m)
-		msg, err := ParseMessage(m)
-		parsePM(msg)
-		if err != nil {
-			continue
+	rawMsgChan := make(chan string, 200)
+	go func() {
+		s := bufio.NewScanner(c.Conn)
+		for s.Scan() {
+			rawMsgChan <- s.Text()
 		}
-		used := false
-		//Attempt to utilize low level modules, if not then pass it into the chan
-		for _, mod := range c.Modules {
-			if mod.IsValid(msg, nil) {
-				res := mod.ParseMessage(msg, nil)
-				if res != "" {
-					c.WriteChan <- res
-				}
-				used = true
-				break
+	}()
+	for !c.shutdown {
+		select {
+		case m := <-rawMsgChan:
+			fmt.Println("Received server message: ", m)
+			msg, err := ParseMessage(m)
+			parsePM(msg)
+			if err != nil {
+				continue
 			}
-		}
-		if !used {
-			c.ReadChan <- msg
+			used := false
+			//Attempt to utilize low level modules, if not then pass it into the chan
+			for _, mod := range c.Modules {
+				if mod.IsValid(msg, nil) {
+					res := mod.ParseMessage(msg, nil)
+					if res != "" {
+						c.WriteChan <- res
+					}
+					used = true
+					break
+				}
+			}
+			if !used {
+				if len(c.ReadChan) > 19 {
+					LTrace.Println("ReadChan full, blocking")
+				}
+				c.ReadChan <- msg
+			}
+
+		default:
+			time.Sleep(time.Millisecond * 250)
 		}
 	}
 	close(c.ReadChan)
@@ -165,28 +179,14 @@ func (c *connection) readMessages() {
 //Loop to write messages
 func (c *connection) writeMessages() {
 	LTrace.Println("Started write message loop")
-	to := make(chan bool)
-	go func() {
-		for !c.shutdown {
-			time.Sleep(time.Second)
-			to <- true
-		}
-		close(to)
-	}()
-	for !c.shutdown {
-		select {
-		case msg := <-c.WriteChan:
-			fmt.Println("Sending client message: ", string(msg))
-			_, err := c.Conn.Write([]byte(msg + "\r\n"))
-			if err != nil {
-				LWarning.Println("Write error, could not send Message("+msg+"): ", err.Error())
-				return
-			}
-		case <-to:
-			LTrace.Println("Write timeout occured")
+
+	for msg := range c.WriteChan {
+		fmt.Println("Sending server message: ", string(msg))
+		_, err := c.Conn.Write([]byte(msg + "\r\n"))
+		if err != nil {
+			LWarning.Println("Write error, could not send Message("+msg+"): ", err.Error())
 		}
 	}
-	close(c.WriteChan)
 	LTrace.Println("Stopped write message loop")
 	c.wg.Done()
 }
