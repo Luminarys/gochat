@@ -42,7 +42,7 @@ func ParseMessage(msg string) (m *Message, err error) {
 
 	split := strings.SplitN(msg, " :", 2)
 	args := strings.Split(split[0], " ")
-	m.Cmd = strings.ToUpper(args[0])
+	m.Cmd = strings.ToUpper(strings.TrimSpace(args[0]))
 	m.Arguments = args[1:]
 	if len(split) > 1 {
 		m.Arguments = append(m.Arguments, split[1])

@@ -3,6 +3,7 @@ package gochat
 import (
 	"errors"
 	"os"
+	"time"
 )
 
 type Bot struct {
@@ -44,6 +45,8 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 
 	bot.Conn.user(nick)
 	bot.Conn.nick(nick)
+
+	time.Sleep(time.Second)
 
 	return bot, nil
 }
@@ -89,6 +92,10 @@ func (bot *Bot) JoinChan(chanName string) *Channel {
 	for !c.Ready {
 	}
 	return c
+}
+
+func (bot *Bot) Register(pass string, email string) {
+	bot.Conn.register(pass, email)
 }
 
 //Disconnects and destroys the bot

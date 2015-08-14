@@ -14,7 +14,7 @@ type PingResp struct {
 }
 
 func (m *PingResp) IsValid(msg *Message, c *Channel) bool {
-	return msg.Cmd == "PING"
+	return msg.Cmd == "PING" || msg.Cmd == "CTCP_PING"
 }
 
 func (m *PingResp) ParseMessage(msg *Message, c *Channel) string {

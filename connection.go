@@ -61,6 +61,7 @@ func makeConn(server, nick string, UseTLS, recon bool) (*connection, error) {
 	}
 	LTrace.Println("Connected successfuly!")
 
+	conn.addModule(&PingResp{})
 	go conn.readMessages()
 	go conn.writeMessages()
 
@@ -73,6 +74,10 @@ func (c *connection) user(user string) {
 
 func (c *connection) nick(nick string) {
 	c.send("NICK " + nick)
+}
+
+func (c *connection) register(pass string, email string) {
+	c.privmsg("NickServ", "REGISTER "+pass+" "+email)
 }
 
 func (c *connection) addModule(m Module) {

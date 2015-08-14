@@ -20,7 +20,6 @@ func TestChanJoin(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-
 	c := bot.JoinChan("#go-bot-test")
 	time.Sleep(time.Second)
 	c.Part()
