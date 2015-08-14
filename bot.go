@@ -54,6 +54,7 @@ func (bot *Bot) handleMessages(ready chan bool) {
 	r := false
 	LTrace.Println("Starting message handling loop")
 	for msg := range bot.Conn.ReadChan {
+		LTrace.Println("Receieved message: ", msg)
 		if msg.Cmd == "PRIVMSG" {
 			//Check that channel is valid
 			if _, ok := bot.Channels[msg.Arguments[0]]; ok {
@@ -85,11 +86,17 @@ func (bot *Bot) AddModule(mod Module) {
 
 //Joins a channel
 func (bot *Bot) JoinChan(chanName string) *Channel {
+	LTrace.Println("Creating and registering a channel interally")
 	c := bot.NewChannel(chanName)
 	bot.Channels[chanName] = c
+
+	LTrace.Println("Sending the JOIN message to the server")
 	bot.Conn.send("JOIN " + chanName)
+
 	for !c.Ready {
 	}
+	LTrace.Println("Channel is ready!")
+
 	return c
 }
 
