@@ -6,7 +6,6 @@ all:
 test:
 	# Get imports
 	mkdir -p ~/Programming/Go
-	go get github.com/thoj/go-ircevent
 	go get golang.org/x/net/html
 	go get github.com/Luminarys/gochat
 	# Test primary

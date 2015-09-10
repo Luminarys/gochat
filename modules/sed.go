@@ -12,7 +12,7 @@ type SedMod struct {
 }
 
 func (s *SedMod) Init() {
-	re, err := regexp.Compile("s/[-a-zA-Z0-9+&@#/%?=~_|!:,.;]+/[-a-zA-Z0-9+&@#/%?=~_|!:,.;]+/")
+	re, err := regexp.Compile("^s/[-a-zA-Z0-9+&@#/%?=~_|!:,.;]+/[-a-zA-Z0-9+&@#/%?=~_|!:,.;]+/?$")
 	if err == nil {
 		s.Re = re
 	}

@@ -4,7 +4,7 @@
 A simple modular IRC library written in Go.
 
 # Requirements
-Golang, and a working internet connection
+Golang, and a working internet connection. An optional dependency for the URL Title module is the golang html package, obtained with `go get golang.org/x/net/html`.
 
 #Setup
 A simple bot that joins a test channel then leaves can be written as such:
