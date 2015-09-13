@@ -109,7 +109,7 @@ func (bot *Bot) JoinChan(chanName string) *Channel {
 }
 
 func (bot *Bot) PM(who, text string) {
-    bot.conn.privmsg(who, text)
+	bot.Conn.privmsg(who, text)
 }
 
 func (bot *Bot) Register(pass string, email string) {
