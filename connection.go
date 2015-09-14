@@ -80,6 +80,10 @@ func (c *connection) register(pass string, email string) {
 	c.privmsg("NickServ", "REGISTER "+pass+" "+email)
 }
 
+func (c *connection) sendPass(pass string) {
+	c.send("PASS " + pass)
+}
+
 func (c *connection) addModule(m Module) {
 	c.Modules = append(c.Modules, m)
 }

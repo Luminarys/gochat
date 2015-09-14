@@ -116,6 +116,11 @@ func (bot *Bot) Register(pass string, email string) {
 	bot.Conn.register(pass, email)
 }
 
+// Sends the password to authenticate
+func (bot *Bot) Auth(pass string) {
+	bot.Conn.sendPass(pass)
+}
+
 //Disconnects and destroys the bot
 func (bot *Bot) Quit() {
 	bot.Conn.quit()
