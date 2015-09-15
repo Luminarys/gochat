@@ -15,6 +15,7 @@ type Mode int
 //mode with higher value outranks one with lower value
 const (
 	Normal Mode = iota
+	Voice
 	Halfop
 	Operator
 	Admin
@@ -54,7 +55,7 @@ func getUser(s string) *User {
 		return &User{Nick: s[1:], CMode: Owner}
 	}
 	if strings.HasPrefix(s, "+") {
-		return &User{Nick: s[1:], CMode: Normal}
+		return &User{Nick: s[1:], CMode: Voice}
 	}
 	return &User{Nick: s, CMode: Normal}
 }
