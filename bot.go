@@ -15,7 +15,7 @@ type Bot struct {
 }
 
 //Creates a new bot for a server, and returns it once it is ready
-func NewBot(server, nick string, hijack bool) (*Bot, error) {
+func NewBot(server, nick string, pass string) (*Bot, error) {
 	logInit(os.Stdout, os.Stderr, os.Stderr)
 	var conn *connection
 	var err error
@@ -27,7 +27,7 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 		Modules:  make([]Module, 0),
 	}
 
-	conn, err = makeConn(server, nick, false, hijack) //Create new irc connection
+	conn, err = makeConn(server, nick, false, false) //Create new irc connection
 	if err != nil {
 		return nil, errors.New("Error! Could not connect")
 	}
@@ -43,6 +43,9 @@ func NewBot(server, nick string, hijack bool) (*Bot, error) {
 
 	bot.Conn.user(nick)
 	bot.Conn.nick(nick)
+	if pass != "" {
+		bot.Auth(pass)
+	}
 
 	<-readyChan
 	close(readyChan)
@@ -73,7 +76,9 @@ func (bot *Bot) handleMessages(ready chan bool) {
 		} else if msg.Cmd == "MODE" || msg.Cmd == "JOIN" || msg.Cmd == "PART" {
 			//Requery state information so we don't have to keep track
 			//of a bunch of dumb +v +h +o states
-			bot.Conn.send("NAMES " + msg.Arguments[0])
+			if c, ok := bot.Channels[msg.Arguments[0]]; ok && c != nil {
+				c.UpdateUsers()
+			}
 		} else if msg.Cmd == "353" {
 			if c, ok := bot.Channels[msg.Arguments[2]]; ok && c != nil {
 				c.setUsers(msg.Text)

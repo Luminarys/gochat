@@ -47,6 +47,10 @@ func (c *Channel) setUsers(message string) {
 	c.Ready = true
 }
 
+func (c *Channel) UpdateUsers() {
+	c.Bot.Conn.send("NAMES " + c.Name)
+}
+
 //Broadcasts a message on a channel.
 func (c *Channel) Say(message string) {
 	c.Bot.Conn.privmsg(c.Name, message)
