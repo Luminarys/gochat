@@ -59,6 +59,7 @@ func (bot *Bot) handleMessages(ready chan bool) {
 		if bot.Conn.shutdown {
 			continue
 		}
+		// TODO: Split these up into callbacks
 		if msg.Cmd == "PRIVMSG" {
 			//Check that channel is valid
 			if _, ok := bot.Channels[msg.Arguments[0]]; ok {
@@ -77,10 +78,11 @@ func (bot *Bot) handleMessages(ready chan bool) {
 			if c, ok := bot.Channels[msg.Arguments[2]]; ok && c != nil {
 				c.setUsers(msg.Text)
 			}
-		}
-		if !r {
-			ready <- true
-			r = true
+		} else if msg.Cmd == "001" {
+			if !r {
+				ready <- true
+				r = true
+			}
 		}
 	}
 }
