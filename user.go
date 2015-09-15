@@ -21,9 +21,12 @@ const (
 	Owner
 )
 
-func parseUsers(m string, cnick string) (others map[string]*User, me *User) {
+func parseUsers(existing map[string]*User, m string, cnick string) (others map[string]*User, me *User) {
 	//This may seem redundant, but is actually quite useful
 	users := make(map[string]*User)
+	if existing != nil {
+		users = existing
+	}
 	var cuser *User
 	for _, nick := range strings.Split(m, " ") {
 		tuser := getUser(nick)

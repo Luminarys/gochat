@@ -75,7 +75,7 @@ func (bot *Bot) handleMessages(ready chan bool) {
 			bot.Conn.send("NAMES " + msg.Arguments[0])
 		} else if msg.Cmd == "353" {
 			if c, ok := bot.Channels[msg.Arguments[2]]; ok && c != nil {
-				c.SetUsers(msg.Text)
+				c.setUsers(msg.Text)
 			}
 		}
 		if !r {
@@ -96,22 +96,29 @@ func (bot *Bot) JoinChan(chanName string) *Channel {
 	c := bot.NewChannel(chanName)
 	bot.Channels[chanName] = c
 
+	readyChan := make(chan bool)
+	go func() {
+		for !c.Ready {
+			//Give other procs a chance to execute
+			time.Sleep(100 * time.Millisecond)
+		}
+		readyChan <- true
+	}()
+
 	LTrace.Println("Sending the JOIN message to the server")
 	bot.Conn.send("JOIN " + chanName)
-
-	for !c.Ready {
-		//Give other procs a chance to execute
-		time.Sleep(100 * time.Millisecond)
-	}
+	<-readyChan
 	LTrace.Println("Channel is ready!")
 
 	return c
 }
 
+// Sends a PM to a channel or user
 func (bot *Bot) PM(who, text string) {
 	bot.Conn.privmsg(who, text)
 }
 
+// Registers the bot
 func (bot *Bot) Register(pass string, email string) {
 	bot.Conn.register(pass, email)
 }

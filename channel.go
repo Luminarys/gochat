@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// Representation of a channel or a user query
 type Channel struct {
 	Name    string
 	Buffer  []*Message
@@ -40,8 +41,9 @@ func (bot *Bot) NewChannel(channel string) *Channel {
 	return c
 }
 
-func (c *Channel) SetUsers(message string) {
-	c.Users, c.Me = parseUsers(message, c.Name)
+func (c *Channel) setUsers(message string) {
+	c.Users, c.Me = parseUsers(c.Users, message, c.Name)
+	fmt.Println("Updated users list:", c.Users)
 	c.Ready = true
 }
 
