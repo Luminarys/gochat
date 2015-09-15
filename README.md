@@ -10,7 +10,7 @@ Golang, and a working internet connection. An optional dependency for the URL Ti
 A simple bot that joins a test channel then leaves can be written as such:
 ```
 func main() {
-    bot, err := gochat.NewBot("irc.rizon.net:6666", "go-bot")
+    bot, err := gochat.NewBot("irc.rizon.net:6666", "go-bot", "")
     if err != nil {
         //Handle errors
     }
@@ -74,6 +74,7 @@ Now, whenever a user types ".ping" into a channel, the bot will respond with "Po
 #Users
 Gochat utilizes a permissions system based on iotas, where users have a mode of:
 * Normal
+* Voice
 * Halfop
 * Operator
 * Admin
@@ -84,3 +85,4 @@ These should be used to compare user permissions, e.g. if you want to ensure tha
 * Improve connection handling/irc library in general.
 * Add in more useful modules
 * Use configuration files or flags
+* Better persistence and log handling using a proper DB

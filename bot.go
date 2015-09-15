@@ -15,7 +15,7 @@ type Bot struct {
 }
 
 //Creates a new bot for a server, and returns it once it is ready
-func NewBot(server, nick string, pass string) (*Bot, error) {
+func NewBot(server, nick, pass string) (*Bot, error) {
 	logInit(os.Stdout, os.Stderr, os.Stderr)
 	var conn *connection
 	var err error
@@ -97,7 +97,7 @@ func (bot *Bot) AddModule(mod Module) {
 	bot.Modules = append(bot.Modules, mod)
 }
 
-//Joins a channel
+//Joins a channel, returning the channel once it is ready
 func (bot *Bot) JoinChan(chanName string) *Channel {
 	LTrace.Println("Creating and registering a channel interally")
 	c := bot.NewChannel(chanName)
