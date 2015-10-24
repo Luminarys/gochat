@@ -63,7 +63,7 @@ func (bot *Bot) handleMessages(ready chan bool) {
 			continue
 		}
 		// TODO: Split these up into callbacks
-		if msg.Cmd == "PRIVMSG" {
+		if msg.Cmd == "PRIVMSG" || msg.Cmd == "NOTICE" {
 			//Check that channel is valid
 			if _, ok := bot.Channels[msg.Arguments[0]]; ok {
 				bot.Channels[msg.Arguments[0]].HandleMessage(msg)
