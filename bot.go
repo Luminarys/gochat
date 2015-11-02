@@ -125,6 +125,11 @@ func (bot *Bot) PM(who, text string) {
 	bot.Conn.privmsg(who, text)
 }
 
+// Sends a NOTICE to a channel or user
+func (bot *Bot) Notice(who, text string) {
+	bot.Conn.notice(who, text)
+}
+
 // Registers the bot
 func (bot *Bot) Register(pass string, email string) {
 	bot.Conn.register(pass, email)

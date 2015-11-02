@@ -129,6 +129,15 @@ func (c *connection) privmsg(who, text string) {
 	c.send("PRIVMSG " + who + " :" + text)
 }
 
+//Sends a notice to a user or channel
+func (c *connection) notice(who, text string) {
+	for len(text) > 400 {
+		c.send("NOTICE " + who + " :" + text[:400])
+		text = text[400:]
+	}
+	c.send("NOTICE " + who + " :" + text)
+}
+
 func (c *connection) send(msg string) {
 	c.WriteChan <- msg
 }
