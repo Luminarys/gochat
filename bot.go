@@ -16,6 +16,9 @@ type Bot struct {
 
 //Creates a new bot for a server, and returns it once it is ready
 func NewBot(server, nick, pass string) (*Bot, error) {
+	if LTrace == nil || LWarning == nil || LError == nil {
+		LogWarn()
+	}
 	var conn *connection
 	var err error
 

@@ -19,6 +19,8 @@ func main() {
     bot.Quit()
 }
 ```
+In addition, if you'd like to control verbosity settings, run either `gochat.LogVerbose()`, `gochat.LogWarn()`, or `gochat.LogErr()` prior to creating any bots.
+Otherwise, the default logging level will be set to Warning.
 
 #Default Modules
 These modules are built into the bot and can be easily imported and loaded with the LoadDefaultModules() function. The currently available modules are:
