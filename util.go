@@ -12,6 +12,10 @@ var (
 	LError   *log.Logger
 )
 
+type NullWriter int
+
+func (NullWriter) Write([]byte) (int, error) { return 0, nil }
+
 func exists(path string) bool {
 	_, err := os.Stat(path)
 	if err == nil {
@@ -23,7 +27,7 @@ func exists(path string) bool {
 	return true
 }
 
-func logInit(
+func LogInit(
 	traceHandle io.Writer,
 	warningHandle io.Writer,
 	errorHandle io.Writer) {

@@ -7,6 +7,7 @@ import (
 )
 
 func TestModules(t *testing.T) {
+	LogWarn()
 	bot, err := NewBot("irc.rizon.net:6666", "go-bot", "")
 	if err != nil {
 		t.Error(err.Error())

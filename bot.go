@@ -16,7 +16,6 @@ type Bot struct {
 
 //Creates a new bot for a server, and returns it once it is ready
 func NewBot(server, nick, pass string) (*Bot, error) {
-	logInit(os.Stdout, os.Stderr, os.Stderr)
 	var conn *connection
 	var err error
 
@@ -52,6 +51,18 @@ func NewBot(server, nick, pass string) (*Bot, error) {
 
 	LTrace.Println("Succesfully intialized a bot!")
 	return bot, nil
+}
+
+func LogVerbose() {
+	LogInit(os.Stdout, os.Stderr, os.Stderr)
+}
+
+func LogWarn() {
+	LogInit(new(NullWriter), os.Stderr, os.Stderr)
+}
+
+func LogErr() {
+	LogInit(new(NullWriter), new(NullWriter), os.Stderr)
 }
 
 func (bot *Bot) handleMessages(ready chan bool) {

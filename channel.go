@@ -1,7 +1,6 @@
 package gochat
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -43,7 +42,7 @@ func (bot *Bot) NewChannel(channel string) *Channel {
 
 func (c *Channel) setUsers(message string) {
 	c.Users, c.Me = parseUsers(c.Users, message, c.Name)
-	fmt.Println("Updated users list:", c.Users)
+	LTrace.Println("Updated users list:", c.Users)
 	c.Ready = true
 }
 
@@ -69,7 +68,6 @@ func (c *Channel) AddModule(mod Module) {
 
 //Handles a message in a channel.
 func (c *Channel) HandleMessage(msg *Message) {
-	fmt.Println(msg.Text)
 	c.Buffer = append(c.Buffer, msg)
 	//If the nick is not in the ignore list or has their value set to false, then don't process the messages
 	if ignored, exists := c.Ignored[msg.Nick]; !ignored || !exists {
@@ -118,14 +116,14 @@ func (c *Channel) DumpLogs() {
 	name := strconv.Itoa(t.Year()) + "-" + t.Month().String() + "-" + strconv.Itoa(t.Day()) + "-" + strconv.Itoa(t.Hour()) + ":" + strconv.Itoa(t.Minute())
 	f, err := os.Create("logs/" + c.Name + "/" + name)
 	if err != nil {
-		fmt.Println("Error, could not create log file!")
+		LError.Println("Could not create log file!")
 		return
 	}
 	defer f.Close()
 	for _, msg := range c.Buffer {
 		_, err := f.WriteString(msg.Nick + ": " + msg.Text + "\n")
 		if err != nil {
-			fmt.Println("Error, could not write to log file!")
+			LError.Println("Could not write to log file!")
 			return
 		}
 	}
